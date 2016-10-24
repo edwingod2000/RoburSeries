@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                >
+    <!-- Menu Cell -->
+    <script>
+      function verwerkHeaderMenuKeuze(menuitem) {
+        document.startpaginaForm.currentMenu.value=menuitem;
+        document.startpaginaForm.submit();
+      }
+    </script>
+    
+    <h:form> <!-- action="/verwerkheadermenu.do"><html:hidden name="startpaginaForm" property="currentMenu" /-->
+        <table align="left" cellpadding="4" cellspacing="4">
+            <tr>
+                <td>
+                    <!-- ***** This is the section of code you need to paste into your web pages ***** -->
+                    <h:outputScript library="js" name="milonic_src.js"/>
+                    <!--h:outputScript library="js" name="mmenuns4.js"/ -->
+                    <h:outputScript library="js" name="mmenudom.js"/>
+                    
+                    <h:outputScript library="js" name="menu_data_nl_new.js" rendered="#{seriesSessionTO.dutch}" />
+                    <h:outputScript library="js" name="menu_data_en_new.js" rendered="#{not seriesSessionTO.dutch}" />
+
+                </td>
+            </tr>
+        </table>
+    </h:form>
+</ui:composition>

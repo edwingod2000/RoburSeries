@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/hoofdpagina.xhtml">
+
+    <ui:define name="content">
+        <h:form>
+            <h:panelGroup rendered="#{param.archief == 'J'}">
+                <ui:include src="/pages/archief.xhtml"/>
+            </h:panelGroup>
+            <center>
+                <div class="infolijst">
+                    <br/>
+                    <div class="infoitemboven">
+                        <div class="infoitemtitel">
+                            <label>
+                                <h:outputText value="Hoogtepunten #{param.jaar} / Highlights #{param.jaar}"/>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="infoitemmidden">
+                        <div class="infoitemcontent">
+                            <table width="500" cellspacing="0" cellpadding="2">
+                                <ui:repeat var="hoogtepunt" value="#{hoogtepuntenController.ophalenHoogtepunten(param.jaar)}">
+                                    <tr>
+                                        <td><h:graphicImage library="images" name="arrow.gif"/></td>
+                                        <td>
+                                            <h:link outcome="/pages/highlight.xhtml">
+                                                <f:param name="hoogtepunt" value="#{hoogtepunt.volgnr}"/>
+                                                <f:param name="jaar" value="#{param.jaar}"/>
+                                                <f:param name="archief" value="#{param.archief}"/>
+                                                <h:outputText value="#{hoogtepunt.titel}"/>
+                                            </h:link>
+                                        </td>
+                                    </tr>
+                                </ui:repeat>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="infoitemonder">
+                    </div>
+                </div>
+            </center>
+        </h:form>
+        <br/>
+    </ui:define>
+</ui:composition>
+
+

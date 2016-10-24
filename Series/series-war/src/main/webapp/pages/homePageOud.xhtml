@@ -1,0 +1,116 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/main.xhtml"
+                >
+
+
+<!--script>
+  function changeMenuImageOn(veldNaam, type) {
+    var veld = document.getElementById(veldNaam);
+    source = "img/new/" + veldNaam + "_on." + type;
+    veld.src = source;
+  }
+  function changeMenuImageOff(veldNaam, type) {
+    var veld = document.getElementById(veldNaam);
+    source = "img/new/" + veldNaam +"."+type;
+    veld.src = source;
+  }
+  function verwerkLeftMenuKeuze(menuitem) {
+    document.startpaginaForm.currentMenu.value=menuitem;
+    document.startpaginaForm.submit();
+  }
+</script-->
+<ui:define name="body">
+<table align="center" width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td width="10%" valign="top"><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+        <table>
+          <tr>
+            <td width="30px">&nbsp;</td>
+            <td>
+            <table border="0" cellpadding="0" cellspacing="0">
+              <tr>
+                  <td colspan="3"><h:graphicImage library="images/new" name="menu_top.gif"/></td>
+              </tr>
+              <tr>
+                  <td rowspan="6" width="17px" background="../resources/images/new/menu_links.jpg">&nbsp;</td>
+                  <td valign="top"><h:graphicImage library="images/new" name="menu_divider.jpg"/><br/></td>
+                  <td rowspan="6" width="16px" background="../resources/images/new/menu_rechts.jpg">&nbsp;</td>
+              </tr>
+              <tr>
+                  <h:panelGroup rendered="#{sessionSeriesTO.dutch}">
+                      <td><h:graphicImage library="images/new" name="menu_inschrijven.png" onclick="javascript:verwerkLeftMenuKeuze(17)" id="menu_inschrijven" onmouseover="javascript:changeMenuImageOn('menu_inschrijven', 'png')" onmouseout="javascript:changeMenuImageOff('menu_inschrijven', 'png')"/><br/></td>
+                  </h:panelGroup>
+                  <h:panelGroup rendered="#{!sessionSeriesTO.dutch}">
+                      <td><h:graphicImage library="images/new" name="menu_registration.png" onclick="javascript:verwerkLeftMenuKeuze(17)" id="menu_registration" onmouseover="javascript:changeMenuImageOn('menu_registration', 'png')" onmouseout="javascript:changeMenuImageOff('menu_registration', 'png')"/><br/></td>              
+                  </h:panelGroup>
+              </tr>
+              <tr>
+                    <td><h:graphicImage library="images/new" style="height: 6px;" name="menu_divider.jpg"/><br/></td>
+                  </tr>
+              <tr>
+                  <td>
+                      <h:panelGroup rendered="#{sessionSeriesTO.dutch}">
+                          <h:graphicImage library="images/new" name="menu_accommodatie.png" onclick="javascript:verwerkLeftMenuKeuze(14)" id="menu_accommodatie" onmouseover="javascript:changeMenuImageOn('menu_accommodatie', 'png')" onmouseout="javascript:changeMenuImageOff('menu_accommodatie', 'png')"/><br/>
+                      </h:panelGroup>
+                      <h:panelGroup rendered="#{!sessionSeriesTO.dutch}">
+                          <h:graphicImage library="images/new" name="menu_accommodation.png" onclick="javascript:verwerkLeftMenuKeuze(14)" id="menu_accommodation" onmouseover="javascript:changeMenuImageOn('menu_accommodation', 'png')" onmouseout="javascript:changeMenuImageOff('menu_accommodation', 'png')"/><br/>
+                      </h:panelGroup>
+                  </td>
+              </tr>
+              <tr>
+                    <td><h:graphicImage library="images/new" name="menu_divider.jpg" style="height: 6px;"/><br/></td>
+              </tr>
+              <tr>
+                  <td><h:graphicImage library="images/new" name="menu_contact.png" onclick="javascript:verwerkLeftMenuKeuze(13)" id="menu_contact" onmouseover="javascript:changeMenuImageOn('menu_contact', 'png')" onmouseout="javascript:changeMenuImageOff('menu_contact', 'png')"/><br/></td>
+                  </tr>
+              <tr>
+                  <td colspan="3"><h:graphicImage library="images/new" name="menu_bottom.gif"/></td>
+              </tr>
+            </table>
+            <br/>
+            &nbsp;&nbsp;<h:graphicImage library="images/new" name="seriesWebsite.png"/>
+            </td>
+          </tr>
+        </table>
+    </td>
+    <td width="80%" valign="top">
+        <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+        <table width="100%">
+          <tr>
+            <td width="600px">&nbsp;</td>
+            <td>
+                <table border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                        <td colspan="3"><h:graphicImage library="images/new" name="impressie_top.gif"/></td>
+                  </tr>
+                      <tr>
+                            <td width="12px" background="../resources/images/new/impressie_links.jpg">&nbsp;</td>
+                            <td width="333px" height="216"><h:graphicImage library="images/new" name="foto0.gif" id="impressieFoto" /></td>
+                            <td width="11px" background="../resources/images/new/impressie_rechts.jpg">&nbsp;</td>
+                      </tr>
+                  <tr>
+                        <td colspan="3">
+                            <h:panelGroup rendered="#{seriesSessionTO.dutch}">
+                                <h:graphicImage library="images/new" name="impressie_bottom_nl.png" />
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{!seriesSessionTO.dutch}">
+                                <h:graphicImage library="images/new" name="impressie_bottom_en.png"/>
+                            </h:panelGroup>
+                        </td>
+                  </tr>
+                </table>
+            </td>
+          </tr>
+        </table>
+    </td>
+    <td width="10%" valign="top">&nbsp;</td>
+  </tr>
+</table>
+</ui:define>
+</ui:composition>

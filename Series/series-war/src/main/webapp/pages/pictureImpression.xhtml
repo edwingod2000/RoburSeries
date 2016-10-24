@@ -1,0 +1,44 @@
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<%@ page import="com.robur58.series.common.*, com.robur58.series.helper.*" %>
+<%@ page import="com.robur58.series.common.SeriesConstants" %>
+<%
+  SeriesSessionTO seriesSessionTO = (SeriesSessionTO)request.getSession().getAttribute(SeriesSessionTO.SERIESSESSIONTO);
+  if (seriesSessionTO == null) {
+    seriesSessionTO = new SeriesSessionTO();
+    seriesSessionTO.setLanguage(SeriesConstants.LANG_NL);
+    request.getSession().setAttribute(SeriesSessionTO.SERIESSESSIONTO, seriesSessionTO);
+  }
+%>
+<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+<table width="100%">
+  <tr>
+    <td width="600px">&nbsp;</td>
+    <td>
+    <table border="0" cellspacing="0" cellpadding="0">
+      <tr>
+	    <td colspan="3"><img src="img/new/impressie_top.gif"></td>
+      </tr>
+	  <tr>
+		<td width="12px" background="img/new/impressie_links.jpg">&nbsp;</td>
+		<td width="333px" height="216"><img id="impressieFoto" src="img/new/foto0.gif" /></td>
+		<td width="11px" background="img/new/impressie_rechts.jpg">&nbsp;</td>
+	  </tr>
+      <tr>
+	    <td colspan="3">
+<%
+  if (seriesSessionTO.getLanguage().equals(SeriesConstants.LANG_NL)) {
+%>    
+	    <img src="img/new/impressie_bottom_nl.png">
+<%
+  } else {
+%>
+	    <img src="img/new/impressie_bottom_en.png">
+<%
+  }
+%>
+	    </td>
+      </tr>
+    </table>
+    </td>
+  </tr>
+</table>

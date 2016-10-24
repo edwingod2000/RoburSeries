@@ -1,0 +1,96 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE table SYSTEM "/resources/entities.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/hoofdpagina.xhtml"
+      >
+
+    <f:metadata>
+        <f:event type="preRenderView" listener="#{wedstrijdenController.ophalenWedstrijden(param.jaar, param.soort)}" />
+    </f:metadata>
+
+    <ui:define name="content">
+        <h:panelGroup rendered="#{param.archief == 'J'}">
+            <ui:include src="/pages/archief.xhtml"/>
+        </h:panelGroup>
+        <center>
+            <br/>
+            <div class="div_infoitem_title"><h:outputText value="#{wedstrijdenController.soort.titelNl} Programma / #{wedstrijdenController.soort.titelEn} Schedule #{param.jaar}" /></div>
+            <div class="div_infoitem_title_2"><h:outputText value="#{wedstrijdenController.soort.titelNl} Programma / #{wedstrijdenController.soort.titelEn} Schedule #{param.jaar}" /></div>
+            <div class="infolijst">
+                <div class="infoitemboven">
+                    <div class="infoitemtitel">
+                        <label>Poule Info</label>
+                    </div>
+                </div>
+                <div class="infoitemmidden">
+                    <div class="infoitemcontent">
+                        <table>
+                            <tr>
+                                <ui:repeat var="poule" value="#{wedstrijdenController.poules}">
+                                    <td class="poule">
+                                        <div class="wedstrijddatum">Poule <h:outputText value="#{poule}"/></div>
+                                        <ui:repeat var="team" value="#{wedstrijdenController.ophalenTeamsOpPouleAndJaarAndSoort(poule, param.jaar, param.soort)}">
+                                            <h:outputText value="#{team.naam}"/><br/>
+                                        </ui:repeat>
+                                    </td>
+                                    <td style="width: 20px;"></td>
+                                </ui:repeat>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="infoitemonder">
+                </div>
+                <br/>
+                <div class="infoitemboven">
+                    <div class="infoitemtitel">
+                        <label>Programma / Schedule <h:outputText value="#{param.jaar}"/></label>
+                    </div>
+                </div>
+                <div class="infoitemmidden">
+                    <div class="infoitemcontent">
+                        <table>
+                            <tr>
+                                <th class="infotd">Nr.</th>
+                                <th class="infotd">Tijd<br/>Time</th>
+                                <th class="infotd" colspan="3">Wedstrijd<br/>Game</th>
+                                <th class="infotd" colspan="3">Uitslag<br/>Result</th>
+                                <th>Opmerkingen<br/>Remarks</th>
+                            </tr>
+                            <ui:repeat var="datum" value="#{wedstrijdenController.datumLijst}">
+                                <tr>
+                                    <td class="infotd" colspan="9">
+                                        <h:outputText value="#{wedstrijdenController.datumTitel(datum)}" styleClass="wedstrijddatum" />
+                                    </td>
+                                </tr>
+                                <ui:repeat var="wedstrijd" value="#{wedstrijdenController.ophalenWedstrijdenOpDatum(datum)}">
+                                    <tr>
+                                        <td class="infotd"><h:outputText value="#{wedstrijd.wedstrijdNummer}"/></td>
+                                        <td class="infotd"><h:outputText value="#{wedstrijd.tijdstip}"/></td>
+                                        <td class="infotd"><h:outputText escape="false" value="#{wedstrijd.displayThuis}"/></td>
+                                        <td class="infotd"> - </td>
+                                        <td class="infotd"><h:outputText escape="false" value="#{wedstrijd.displayUit}"/></td>
+                                        <td class="infotd"><h:outputText value="#{wedstrijd.puntenVoor}"/></td>
+                                        <td class="infotd"> - </td>
+                                        <td class="infotd"><h:outputText value="#{wedstrijd.puntenTegen}"/></td>
+                                        <td class="infotd">
+                                            <h:outputText value="DEMO " rendered="#{wedstrijd.demo}"/>
+                                            <h:outputText value="#{wedstrijd.opmerking}"/>
+                                        </td>
+                                    </tr>
+                                </ui:repeat>
+                            </ui:repeat>
+                        </table>
+                    </div>
+                </div>
+                <div class="infoitemonder">
+                </div>
+            </div>
+            <br/>
+        </center>
+    </ui:define>
+</ui:composition>

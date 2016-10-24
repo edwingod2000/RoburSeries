@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      template="/"
+      >
+
+    <h:head>
+        <title>Apeldoorn Honk- en Softbal Series</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+        <meta http-equiv="CACHE-CONTROL" content="NO-CACHE"/>
+
+        <!-- Alle stylesheet includes. -->
+        <ui:include src="template_css.xhtml" />
+        <ui:insert name="script"/>
+
+        <style>
+            .tdcontent {
+                background-image:url(../resources/images/new/body.png);
+                background-repeat:no-repeat;
+                background-position:top;
+                vertical-align:top;
+            }
+        </style>
+
+        <h:outputScript library="scripts/lib" name="jquery-1.4.4.js"/>
+        <h:outputScript library="scripts/lib" name="jquery-ui-1.8.5.custom.min.js"/>
+        <h:outputScript library="scripts/lib" name="jquery-cookie-1.0.js"/>
+        <h:outputScript library="scripts/lib" name="jquery-toggelbaar-1.0.js"/>
+        <h:outputScript library="scripts/lib" name="ddsmoothmenu.js" target="body"/>
+
+    </h:head>
+
+    <h:body styleClass="seriesBody" onload="initializeTimer();">
+
+        <table align="center" border="2" cellpadding="0" cellspacing="0" width="938">
+            <tr>
+                <td background="../resources/images/new/header.png" height="54" valign="top" align="center">
+                    <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td width="90%" align="right" valign="top">
+                                <ui:include src="/pages/topMenu.xhtml"/>
+                            </td>
+                            <td width="10%" valign="top">
+                                <ui:include src="/pages/language.xhtml"/>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <h:panelGroup rendered="#{seriesSessionTO.dutch}">
+                    <td background="../resources/images/new/titel_nl.png" height="188">
+                        <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td width="72%" valign="top">
+                                    <ui:insert name="titel"/>
+                                </td>
+                                <td width="28%" valign="top">
+                                    <ui:include src="/pages/datum.xhtml"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{!seriesSessionTO.dutch}">
+                    <td background="../resources/images/new/titel_en.png" height="188">
+                        <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td width="72%" valign="top">
+                                    <ui:insert name="titel"/>
+                                </td>
+                                <td width="28%" valign="top">
+                                    <ui:include src="/pages/datum.xhtml"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </h:panelGroup>
+            </tr>
+            <tr>
+                <td class="tdcontent" height="508px">
+                    <ui:insert name="body" />
+                </td>
+            </tr>
+        </table>
+        <!--h:outputScript library="js" name="main.js"/-->
+    </h:body>
+</html>

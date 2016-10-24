@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      >
+<h:head>
+  <title>Apeldoorn Honk- en Softbal Series</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE" />
+
+    <!-- Alle stylesheet includes. -->
+    <ui:include src="template_css.xhtml" />
+    <ui:insert name="script"/>
+
+    <style>
+        .tdcontent {
+            background-image:url(../resources/images/new/body.png);
+            background-repeat:no-repeat;
+            background-position:top;
+            vertical-align:top;
+        }
+    </style>
+  
+</h:head>
+<h:body onload="initializeTimer();">
+  <div class="div_logo">
+    <div class="div_language">
+	  <a href="/SeriesWeb/setLanguageAction.do;jsessionid=71F0982CCA5050BDDDBBECDDEB252CC3" class="languageLink"><img ALT="Switch to English" width="30" TITLE="Switch to English" border="0" src="img/new/uk.gif"/></a>
+  	
+
+    </div>
+  </div>
+
+  <div class="div_header"></div>
+  
+  <!-- Menu Cell -->
+  <script type="text/javascript">
+    function verwerkHeaderMenuKeuze(menuitem) {
+      document.startpaginaForm.currentMenu.value=menuitem;
+      document.startpaginaForm.submit();
+    }
+  </script>
+  <form name="startpaginaForm" method="post" action="/SeriesWeb/verwerkheadermenu.do;jsessionid=71F0982CCA5050BDDDBBECDDEB252CC3">
+      <input type="hidden" name="currentMenu" value="1"/>
+    <div class="div_topmenu">
+	    <!-- ***** This is the section of code you need to paste into your web pages ***** -->
+		<script type="text/javascript" src="js/milonic_src.js"></script>
+		<script type="text/javascript" src="js/mmenuns4.js"></script>"
+
+		<script type="text/javascript" src="js/main.js"></script>
+    </div>
+  </form>
+
+  <div class="div_titel">
+    
+    <div class="div_titel_nl"></div>
+
+  </div>
+  <div class="div_seperator"></div>
+  <div class="div_content">
+	  
+	<div class="div_datum_nl">
+
+		5 t/m 10 juli
+		<br/>
+		2011	
+	</div>
+
+<div class="div_impressie">
+  <div class="div_impressie_foto">
+    <img id="impressieFoto" src="http://homeplate.robur58.com/Series/Highlights/highlights (1).jpg" ></img>
+  </div>
+    
+	<div class="div_impressie_titel_nl"></div>
+
+</div>
+
+<div class="div_contentmenu">
+  <div class="div_contentmenu_divider"></div>
+  <div class="div_contentmenu_entry">
+ 
+	<img id="menu_inschrijven" width="163px" height="58px" src="img/new/menu_inschrijven.png" onclick="verwerkLeftMenuKeuze(17)" onmouseover="changeMenuImageOn('menu_inschrijven', 'png')" onmouseout="changeMenuImageOff('menu_inschrijven', 'png')"></img>
+
+  </div>
+  <div class="div_contentmenu_divider"></div>
+  <div class="div_contentmenu_entry">
+ 
+    <img src="img/new/menu_accommodatie.png" width="163px" height="62px" onclick="javascript:verwerkLeftMenuKeuze(14)" id="menu_accommodatie" onmouseover="javascript:changeMenuImageOn('menu_accommodatie', 'png')" onmouseout="javascript:changeMenuImageOff('menu_accommodatie', 'png')"></img>
+
+  </div>
+  <div class="div_contentmenu_divider"></div>
+  <div class="div_contentmenu_entry">
+    <img src="img/new/menu_contact.png" width="163px" height="59px" onclick="javascript:verwerkLeftMenuKeuze(13)" id="menu_contact" onmouseover="javascript:changeMenuImageOn('menu_contact', 'png')" onmouseout="javascript:changeMenuImageOff('menu_contact', 'png')"></img>
+  </div>
+  <div class="div_contentmenu_divider"></div>
+</div>
+<div class="div_seriesurl"></div>
+<a class="div_flyer" target="_new" href="http://homeplate.robur58.com/Series/Flyer.pdf"><img width="110px" height="173px" border="0" src="img/SeriesFlyer.png"/></a>
+
+  </div>
+</h:body>
+</html>

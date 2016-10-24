@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                >
+
+    <table cellspacing="0" cellpadding="0">
+        <tr>
+            <td height="45px" valign="bottom">
+                <h:form>
+                    <h:panelGroup rendered="#{seriesSessionTO.dutch}">
+                        &nbsp;&nbsp;&nbsp;
+                        <h:commandLink styleClass="languageLink" action="#{seriesSessionTO.switchLanguage()}">
+                            <h:graphicImage alt="Switch to English" title="Switch to English" style="border: 0px; width: 30px" library="images/new" name="uk.gif"/>
+                        </h:commandLink>
+                   </h:panelGroup>
+                    <h:panelGroup rendered="#{!seriesSessionTO.dutch}">
+                        &nbsp;
+                        <h:commandLink styleClass="languageLink" action="#{seriesSessionTO.switchLanguage()}">
+                            <h:graphicImage alt="Kies Nederlands" title="Kies Nederlands" style="border: 0px; width: 30px" library="images/new" name="nl.gif"/>
+                        </h:commandLink>
+                    </h:panelGroup>
+                </h:form>
+            </td>
+        </tr>
+    </table>
+</ui:composition>

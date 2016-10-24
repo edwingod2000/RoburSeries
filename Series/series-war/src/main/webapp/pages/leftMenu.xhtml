@@ -1,0 +1,83 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/bsm/bsmmain.xhtml"
+                >
+    
+<script>
+  function changeMenuImageOn(veldNaam, type) {
+    alert("Hier");
+    var veld = document.getElementById(veldNaam);
+    source = "img/new/" + veldNaam + "_on." + type;
+    veld.src = source;
+  }
+  function changeMenuImageOff(veldNaam, type) {
+    var veld = document.getElementById(veldNaam);
+    source = "img/new/" + veldNaam +"."+type;
+    veld.src = source;
+  }
+  function verwerkLeftMenuKeuze(menuitem) {
+    alert("Hier");
+    document.startpaginaForm.currentMenu.value=menuitem;
+    document.startpaginaForm.submit();
+  }
+</script>
+<h:form 
+    <h:inputHidden value="#{menuController.currentMenu}" />
+
+<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+<table>
+  <tr>
+    <td width="30px">&nbsp;</td>
+    <td>
+    <table border="0" cellpadding="0" cellspacing="0">
+      <tr>
+	    <td colspan="3"><img src="img/new/menu_top.gif"></td>
+      </tr>
+      <tr>
+	    <td rowspan="6" width="17px" background="img/new/menu_links.jpg">&nbsp;</td>
+	    <td valign="top"><img height="6" width="163px" src="img/new/menu_divider.jpg"><br/></td>
+            <td rowspan="6" width="16px" background="img/new/menu_rechts.jpg">&nbsp;</td>
+      </tr>
+      <tr>
+          <h:panelGroup rendered="#{seriesSessionTO.dutch}">
+              <td><img src="img/new/menu_inschrijven.png" onclick="javascript:verwerkLeftMenuKeuze(2)" id="menu_inschrijven" onmouseover="javascript:changeMenuImageOn('menu_inschrijven', 'png')" onmouseout="javascript:changeMenuImageOff('menu_inschrijven', 'png')"><br/></td>
+          </h:panelGroup>
+          <h:panelGroup rendered="#{!seriesSessionTO.dutch}">
+              <td><img src="img/new/menu_registration.png" onclick="javascript:verwerkLeftMenuKeuze(2)" id="menu_registration" onmouseover="javascript:changeMenuImageOn('menu_registration', 'png')" onmouseout="javascript:changeMenuImageOff('menu_registration', 'png')"><br/></td>
+          </h:panelGroup>
+      </tr>
+      <tr>
+	    <td><img height="6" src="img/new/menu_divider.jpg"><br/></td>
+      </tr>
+
+      <tr>
+          <h:panelGroup rendered="#{seriesSessionTO.dutch}">
+              <td><img src="img/new/menu_accommodatie.png" onclick="javascript:verwerkLeftMenuKeuze(14)" id="menu_accommodatie" onmouseover="javascript:changeMenuImageOn('menu_accommodatie', 'png')" onmouseout="javascript:changeMenuImageOff('menu_accommodatie', 'png')"><br/></td>
+          </h:panelGroup>
+          <h:panelGroup rendered="#{!seriesSessionTO.dutch}">
+	      <td><img src="img/new/menu_accommodation.png" onclick="javascript:verwerkLeftMenuKeuze(14)" id="menu_accommodation" onmouseover="javascript:changeMenuImageOn('menu_accommodation', 'png')" onmouseout="javascript:changeMenuImageOff('menu_accommodation', 'png')"><br/></td>
+          </h:panelGroup>
+      </tr>
+      <tr>
+	    <td><img height="6" src="img/new/menu_divider.jpg"><br/></td>
+      </tr>
+      <tr>
+	    <td><img src="img/new/menu_contact.png" onclick="javascript:verwerkLeftMenuKeuze(2)" id="menu_contact" onmouseover="javascript:changeMenuImageOn('menu_contact', 'png')" onmouseout="javascript:changeMenuImageOff('menu_contact', 'png')"><br/></td>
+      </tr>
+      <tr>
+	    <td colspan="3"><img src="img/new/menu_bottom.gif"></td>
+      </tr>
+    </table>
+    <br/>
+    &nbsp;&nbsp;<img src="img/new/seriesWebsite.png"/>
+    </td>
+  </tr>
+</table>
+</h:form>
+
+</ui:composition>

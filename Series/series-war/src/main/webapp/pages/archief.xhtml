@@ -1,0 +1,164 @@
+<!DOCTYPE table SYSTEM "/resources/entities.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:info="http://java.sun.com/jsf/composite/components/info"
+      xmlns:f="http://java.sun.com/jsf/core">
+
+    <div class="archief">
+        <div class="div_infoitem_title"><info:taalkeuze nl="Archief" en="Archive"/></div>
+        <div class="div_infoitem_title_2"><info:taalkeuze nl="Archief" en="Archive"/></div>
+        <table>
+            <tr>
+                <td width="20px">&nbsp;</td>
+                <td>
+                    <table bgcolor="#666666" >
+                        <tr>
+                            <td width="10px">&nbsp;</td>
+                            <td class="subtitel" width="209px">#{archiefController.getHuidigJaarMinusAantal(1)}</td>
+                            <td class="subtitel" width="209px">#{archiefController.getHuidigJaarMinusAantal(2)}</td>
+                            <td class="subtitel" width="209px">#{archiefController.getHuidigJaarMinusAantal(3)}</td>
+                            <td class="subtitel" width="209px">#{archiefController.getHuidigJaarMinusAantal(4)}</td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>
+                                <h5>
+                                    <h:link styleClass="link" outcome="/pages/teamsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(1)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        Teams
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/wedstrijdenList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(1)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Wedstrijden" en="Games"/>
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/statsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(1)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Statistieken" en="Stats"/>
+                                    </h:link><br/>
+                                    
+                                    <h:link styleClass="link" outcome="/pages/rankingList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(1)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Stand" en="Ranking"/>
+                                    </h:link><br/>
+                                    
+                                    <h:link styleClass="link" outcome="/pages/highlightsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(1)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Hoogtepunten" en="Highlights"/>
+                                    </h:link><br/>
+                                </h5>
+                            </td>
+                            <td>
+                                <h5>
+                                    <h:link styleClass="link" outcome="/pages/teamsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(2)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        Teams
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/wedstrijdenList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(2)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Wedstrijden" en="Games"/>
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/statsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(2)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Statistieken" en="Stats"/>
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/rankingList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(2)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Stand" en="Ranking"/>
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/highlightsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(2)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Hoogtepunten" en="Highlights"/>
+                                    </h:link><br/>
+                                </h5>
+                            </td>
+                            <td>
+                                <h5>
+                                    <h:link styleClass="link" outcome="/pages/teamsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(3)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        Teams
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/wedstrijdenList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(3)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Wedstrijden" en="Games"/>
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/statsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(3)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Statistieken" en="Stats"/>
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/rankingList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(3)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Stand" en="Ranking"/>
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/highlightsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(3)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Hoogtepunten" en="Highlights"/>
+                                    </h:link><br/>
+                                </h5>
+                            </td>
+                            <td>
+                                <h5>
+                                    <h:link styleClass="link" outcome="/pages/teamsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(4)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        Teams
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/wedstrijdenList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(4)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Wedstrijden" en="Games"/>
+                                    </h:link><br/>
+
+                                    <h:link styleClass="link" outcome="/pages/statsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(4)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Statistieken" en="Stats"/>
+                                    </h:link><br/>
+                                    
+                                    <h:link styleClass="link" outcome="/pages/rankingList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(4)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Stand" en="Ranking"/>
+                                    </h:link><br/>
+                                    
+                                    <h:link styleClass="link" outcome="/pages/highlightsList">
+                                        <f:param name="jaar" value="#{archiefController.getHuidigJaarMinusAantal(4)}"/>
+                                        <f:param name="archief" value="J"/>
+                                        <info:taalkeuze nl="Hoogtepunten" en="Highlights"/>
+                                    </h:link><br/>
+                                </h5>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        &nbsp;
+    </div>
+</ui:composition>

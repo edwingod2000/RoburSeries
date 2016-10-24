@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE table SYSTEM "/resources/entities.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/hoofdpagina.xhtml"
+      >
+
+    <ui:define name="content">
+        <h:panelGroup rendered="#{param.archief == 'J'}">
+            <ui:include src="/pages/archief.xhtml"/>
+        </h:panelGroup>
+        <center>
+            <br/>
+            <div class="infolijst">
+                <div class="infoitemboven">
+                    <div class="infoitemtitel">
+                        <label><h:outputText value="#{teamsController.getStandTitel(param.soort, param.jaar)}"/></label>
+                    </div>
+                </div>
+                <div class="infoitemmidden">
+                    <div class="infoitemcontent">
+
+                        <iframe width="99%" height="800px" src="#{teamsController.getStandUrl(param.jaar, param.soort)}"/>
+                    </div>
+                </div>
+                <div class="infoitemonder">
+                </div>
+            </div>
+            <br/>
+        </center>
+    </ui:define>
+</ui:composition>

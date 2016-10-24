@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                >
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <h:panelGroup rendered="#{seriesSessionController.dutch}">
+        <h:graphicImage library="images/new" name="datum_nl.png"/>
+    </h:panelGroup>
+    <h:panelGroup rendered="#{!seriesSessionController.dutch}">
+        <h:graphicImage library="images/new" name="datum_en.png"/>
+    </h:panelGroup>
+
+</ui:composition>

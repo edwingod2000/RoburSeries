@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                >
+
+<table cellpadding="0" cellspacing="0">
+    <tr>
+        <h:panelGroup rendered="#{seriesSessionTO.dutch}">
+            <td colspan="3"><img src="img/LogoSeriesSmall.png" width="300" height="180"></td>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{!seriesSessionTO.dutch}">
+            <td colspan="3"><img src="img/LogoSeriesSmallEN.png" width="300" height="180"></td>
+        </h:panelGroup>
+    </tr>
+    <tr>
+	  <td>&nbsp;</td>
+	  <td>
+	    <!-- Info Cell -->
+	    <br/>
+	    <table>
+                  <tr>
+                     <td><div class="subtitel">Sponsors</div></td>
+                  </tr>
+		  <tr>
+		    <td>
+		      <font color="#FFFFFF">
+		      <ul>
+		      <li>Cafetaria Kokkie</li>
+		      <li>Coach Consult</li>
+		      <li>Dros Schoonmaakdiensten</li>
+		      <li>Gemeente Apeldoorn</li>
+		      <li>Hanos HIS</li>
+		      <li>De Hypotheker</li>
+		      <li>Impact Media</li>
+		      <li>Café Jeroen</li>
+		      <li>Kleverwal schilderwerken</li>
+		      <li>Nysingh advocaten-notarissen</li>
+		      <li>Robbers accountants en belastingadviseurs</li>
+		      <li>Slagerij De Graaf</li>
+		      <li>Veluwse Bouwonderneming BV</li>
+		      <li>World Sport</li>
+		      <li>Van der Woude Brandbeveiliging</li>
+		      <li>Zovi Oils BV</li>
+		      </ul>
+		      </font>
+		    </td>
+		  </tr>
+		</table>
+		<br/>
+		<table align="center">
+		  <tr>
+		    <td>
+		      <br/>
+		      <font color="#FFFFFF">
+		      <center>
+		      <img src="img/zegel_top-evenement.gif" border="0">
+		      <br/>Apeldoorn<br/>"Sportstad in het Groen"
+		      </center>
+		      </font>
+		    </td>
+		  </tr>
+		</table>
+		<br/>
+		<table>
+		  <tr>
+			<td><div class="subtitel">Contact</div></td>
+		  </tr>
+		  <tr>
+		    <td><font color="#FFFFFF">Mail: series@robur58.com</font></td>
+		  </tr>
+		</table>
+		<br/>
+		<table>
+		  <tr>
+                      <td><div class="subtitel"><info:taalkeuze nl="Adres" en="Address" /></div></td>
+		  </tr>
+		  <tr>
+		    <td><font color="#FFFFFF">Honk- en Softbalvereniging<br/>Robur '58<br/>Sportpark Orderbos 41<br/>7313 HN  Apeldoorn<br/>Tel.: 055-3553474</font></td>
+		  </tr>
+		</table>
+                <br>
+		<table align="center">
+		  <tr>
+		   <td align="center">
+		     <img width="150" src="img/logoKat.gif" alt="HSV Robur '58 - Apeldoorn" title="HSV Robur '58 - Apeldoorn">
+		     <br/>
+		     <font color="#FFFFFF">WWW.ROBUR58.COM</font>
+		     <br/>
+		     <br/>
+		   </td>
+		  </tr>
+		</table>
+	  </td>
+	  <td>&nbsp;</td>
+	</tr>
+  </table>
+</ui:composition>

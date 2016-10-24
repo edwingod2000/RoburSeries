@@ -1,0 +1,68 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/hoofdpagina.xhtml"
+      >
+
+    <f:metadata>
+        <f:event type="preRenderView" listener="#{teamsController.ophalenTeamLineup(param.jaar, param.team)}" />
+    </f:metadata>
+
+    <ui:define name="content">
+        <h:panelGroup rendered="#{param.archief == 'J'}">
+            <ui:include src="/pages/archief.xhtml"/>
+        </h:panelGroup>
+        <center>
+            <br/>
+            <div class="infolijst">
+                <div class="infoitemboven">
+                    <div class="infoitemtitel">
+                        <label>Lineup <h:outputText value="#{teamsController.team.naam}"/></label>
+                    </div>
+                </div>
+                <div class="infoitemmidden">
+                    <div class="infoitemcontent">
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td align="CENTER" colspan="4">
+                                        <h:graphicImage library="images" name="noteampicture.jpg" width="600" rendered="#{empty teamsController.team.foto}" />
+                                        <h:panelGroup rendered="#{not empty teamsController.team.foto}">
+                                            <a href="#{teamsController.getTeamFotoBigUrl(param.jaar)}" target="_new"><img border="0" width="600" src="#{teamsController.getTeamFotoUrl(param.jaar)}"/></a>
+                                        </h:panelGroup>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th width="2" class="infoth">&nbsp;</th>
+                                    <th width="48" height="35" align="left" class="infoth">Rugnr.<br/>Nr.&nbsp;</th>
+                                    <th width="450" height="35" align="left" class="infoth">Teamlid<br/>Member&nbsp;</th>
+                                    <th width="100" height="35" align="left" class="infoth">Posities<br/>Positions&nbsp;</th>
+                                </tr>
+                                <ui:repeat var="deelnemer" value="#{teamsController.deelnemers}">
+                                    <tr class="even">
+                                        <td>&nbsp;</td>
+                                        <td><h:outputText value="#{deelnemer.rugnummer}"/></td>
+                                        <td><h:outputText value="#{deelnemer.displayNaam}"/></td>
+                                        <h:panelGroup rendered="#{deelnemer.soortDeelnemers.volgnr == 1}">
+                                            <td><h:outputText value="#{deelnemer.posities}"/></td>
+                                        </h:panelGroup>
+                                        <h:panelGroup rendered="#{deelnemer.soortDeelnemers.volgnr != 1}">
+                                            <td><h:outputText value="#{deelnemer.soortDeelnemers.omschrijving}"/></td>
+                                        </h:panelGroup>
+                                    </tr>
+                                </ui:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="infoitemonder">
+                </div>
+            </div>
+        </center>
+        <br/>
+    </ui:define>
+</ui:composition>

@@ -1,0 +1,3 @@
+<!-- HTML entities mogelijk maken in XML. -->
+<!ENTITY nbsp "&#x00a0;">
+<!ENTITY euro "&#x20ac;">

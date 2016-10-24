@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="nl" xml:lang="nl"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:info="http://java.sun.com/jsf/composite/components/info"
+      xmlns:ui="http://java.sun.com/jsf/facelets">
+    <h:head>
+        <title>Apeldoorn Honk- en Softbal Series</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+        <meta http-equiv="CACHE-CONTROL" content="NO-CACHE" />
+        <meta http-equiv="refresh" content="#{session.maxInactiveInterval};url=#{facesContext.externalContext.request.contextPath}/pages/homePage.faces?reason=expired" />
+
+        <h:outputStylesheet library="css" name="series.css" />
+        <h:outputStylesheet library="css" name="vervolg.css" />
+        <h:outputStylesheet library="css" name="button.css" />
+        <h:outputStylesheet library="css" name="ddsmoothmenu.css" />
+        <h:outputScript library="js/lib" name="jquery-1.5.2.min.js" />
+
+        <script type="text/javascript">
+            var contextPath = '#{facesContext.externalContext.request.contextPath}';
+            var downImage = contextPath + "/resources/images/down.gif";
+            var rightImage = contextPath + "/resources/images/right.gif";
+
+            $(document).ready(function(){
+                ddsmoothmenu.init({
+                    mainmenuid: "smoothmenu", //Menu DIV id
+                    orientation: 'h', //Horizontal or vertical menu: Set to "h" or "v"
+                    classname: 'ddsmoothmenu', //class added to menu's outer DIV
+                    //customtheme: ["#804000", "#482400"],
+                    contentsource: "markup" //"markup" or ["container_id", "path_to_menu_file"]
+                })
+            });
+
+            function verwerkHeaderMenuKeuze(menuitem) {
+                document.startpaginaForm.currentMenu.value=menuitem;
+                document.startpaginaForm.submit();
+            }
+        </script>
+    </h:head>
+
+    <h:body onload="initializeTimer();" styleClass="main">
+        <div class="centeredcontent">
+            <div class="logo"></div>
+            <div class="div_language">
+                <h:form>
+                    <h:commandLink styleClass="languageLink" action="#{seriesSessionTO.switchLanguage()}">
+                        <h:graphicImage library="images" alt="Switch to English" name="uk.gif" title="Switch to English" width="30px" style="border:0" rendered="#{seriesSessionTO.dutch}"/>
+                        <h:graphicImage library="images" alt="Kies Nederlands" name="nl.gif" title="Kies Nederlands" width="30px" style="border:0" rendered="#{not seriesSessionTO.dutch}"/>
+                    </h:commandLink>
+                </h:form>
+            </div>
+            <div class="div_header"></div>
+            <h:form prependId="false">
+                <div class="div_topmenu">
+                    <div id="smoothmenu" class="ddsmoothmenu">
+                        <ul>
+                            <li><h:link outcome="#{navigatieController.interneNavigatie('home')}">Home</h:link></li>
+                            <li>
+                                <a href="#"><info:taalkeuze nl="Toernooi" en="Tournament"/></a>
+                                <ul>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('organisatie')}"><info:taalkeuze nl="Organisatie" en="Organisation"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('inschrijven')}"><info:taalkeuze nl="Inschrijven" en="Registration"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('overdeseries')}"><info:taalkeuze nl="Over de Series" en="About the Series"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('programma')}"><info:taalkeuze nl="Programma" en="Program"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('regels')}"><info:taalkeuze nl="Regels" en="Rules"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('onderkomen')}"><info:taalkeuze nl="Onderkomen" en="Accomodation"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('overrobur58')}"><info:taalkeuze nl="Over Robur '58" en="About Robur '58"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('overhetspeelveld')}"><info:taalkeuze nl="Over het speelveld" en="About the ballpark"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('souveniers')}"><info:taalkeuze nl="Souveniers" en="Souveniers"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('umpires')}"><info:taalkeuze nl="Umpires" en="Umpires"/></h:link></li>
+                                    <li><h:link outcome="#{navigatieController.interneNavigatie('testimonials')}"><info:taalkeuze nl="Testimonials" en="Testimonials"/></h:link></li>
+                                </ul>
+                            </li>
+                            <li><h:link outcome="#{navigatieController.interneNavigatie('school')}"><info:taalkeuze nl="School" en="School"/></h:link></li>
+                            <li><h:link outcome="#{navigatieController.interneNavigatie('umpireclinic')}"><info:taalkeuze nl="Umpire Clinic" en="Umpire Clinic"/></h:link></li>
+                            <h:panelGroup rendered="#{not navigatieController.toonHuidigToernooiMenu()}">
+                                <li>
+                                    <a href="#">Series #{navigatieController.bepaalHuidigJaar()}</a>
+                                    <ul>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('komendejaren')}"><info:taalkeuze nl="Datum" en="Date"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('inschrijven')}"><info:taalkeuze nl="Inschrijven" en="Registration"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('onderkomen')}"><info:taalkeuze nl="Onderkomen" en="Accomodation"/></h:link></li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <a href="#">Series #{navigatieController.bepaalVorigJaar()}</a>
+                                    <ul>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('previousteams')}"><info:taalkeuze nl="Teams" en="Teams"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('previouswedstrijden')}"><info:taalkeuze nl="Wedstrijden" en="Games"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('previousstatistieken')}"><info:taalkeuze nl="Statistieken" en="Stats"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('previousstand')}"><info:taalkeuze nl="Stand" en="Ranking"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('previoushoogtepunten')}"><info:taalkeuze nl="Hoogtepunten" en="Highlights"/></h:link></li>
+                                    </ul>
+                                </li>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{navigatieController.toonHuidigToernooiMenu()}">
+                                <li>
+                                    <a href="#">Series #{navigatieController.bepaalHuidigJaar()}</a>
+                                    <ul>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('currentteams')}"><info:taalkeuze nl="Teams" en="Teams"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('currentwedstrijden')}"><info:taalkeuze nl="Wedstrijden" en="Games"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('currentstatistieken')}"><info:taalkeuze nl="Statistieken" en="Stats"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('currentstand')}"><info:taalkeuze nl="Stand" en="Ranking"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('currenthoogtepunten')}"><info:taalkeuze nl="Hoogtepunten" en="Highlights"/></h:link></li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <a href="#">Series #{navigatieController.bepaalVolgendJaar()}</a>
+                                    <ul>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('komendejaren')}"><info:taalkeuze nl="Datum" en="Date"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('inschrijven')}"><info:taalkeuze nl="Inschrijven" en="Registration"/></h:link></li>
+                                        <li><h:link outcome="#{navigatieController.interneNavigatie('onderkomen')}"><info:taalkeuze nl="Onderkomen" en="Accomodation"/></h:link></li>
+                                    </ul>
+                                </li>
+                            </h:panelGroup>
+                            <li><h:link outcome="#{navigatieController.interneNavigatie('sponsors')}"><info:taalkeuze nl="Sponsors" en="Sponsors"/></h:link></li>
+                            <li><h:link outcome="#{navigatieController.interneNavigatie('gastenboek')}"><info:taalkeuze nl="Gastenboek" en="Guestbook"/></h:link></li>
+                            <li><h:link outcome="#{navigatieController.interneNavigatie('archief')}"><info:taalkeuze nl="Archief" en="Archive"/></h:link></li>
+                        </ul>
+                    </div>
+                </div>
+            </h:form>
+        </div>
+
+        <div class="div_titel">
+            <div class="div_datum_nl">
+                <div class="div_datum">
+                    <h:outputText value="#{navigatieController.bepaalHuidigeDatum()}"/>
+                <br/>
+                <h:outputText value="#{navigatieController.bepaalHuidigJaar()}"/>
+                </div>
+            </div>	
+        </div>
+        <div class="div_seperator"></div>	
+        <div class="facebook"><a target="_new" href="http://www.facebook.com/seriesrobur"><h:graphicImage library="images" name="facebook_32.png" style="border: 0px"/></a></div>
+
+        <div class="centeredcontent">
+            <div class="div_content">
+                <ui:insert name="content" />
+            </div>
+        </div>	
+
+        <script type="text/javascript">
+            function initializeTimer() {
+                // dummy functie
+            }
+        </script>	
+        <h:outputScript library="js/lib" name="ddsmoothmenu.js" target="body"/>
+        <!--h:outputText value="Your session has been expired" rendered="#{param.reason == 'expired'}" /-->
+    </h:body>
+</html>

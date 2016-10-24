@@ -1,0 +1,57 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE table SYSTEM "/resources/entities.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/hoofdpagina.xhtml"
+      >
+
+    <ui:define name="content">
+        <h:panelGroup rendered="#{param.archief == 'J'}">
+            <ui:include src="/pages/archief.xhtml"/>
+        </h:panelGroup>
+        <center>
+            <br/>
+            <div class="infolijst">
+                <div class="infoitemboven">
+                    <div class="infoitemtitel">
+                        <label>Statistieken / Stats <h:outputText value="#{param.jaar}"/></label>
+                    </div>
+                </div>
+                <div class="infoitemmidden">
+                    <div class="infoitemcontent">
+                        <table width="650" cellspacing="0" cellpadding="0" class="noborder">
+                            <tbody>
+                                <ui:repeat var="soortJaar" value="#{teamsController.ophalenSoorten(param.jaar)}">
+                                    <tr>
+                                        <th width="700" height="35" align="left" class="infoth">
+                                            &nbsp;
+                                            <h:link outcome="/pages/stats.faces">
+                                                <f:param name="jaar" value="#{param.jaar}"/>
+                                                <f:param name="soort" value="#{soortJaar.risSoort.afkorting}"/>
+                                                <f:param name="archief" value="#{param.archief}"/>
+                                                <h:graphicImage library="images" name="stats.jpg" width="47px" style="border:0" title="Toon statistieken / Show stats" alt="Toon statistieken / Show stats"/>
+                                            </h:link>
+                                            <div class="soortlijsttitel">
+                                                &nbsp;&nbsp;<h:outputText value="#{soortJaar.risSoort.titelNl}"/> Statistieken / <h:outputText value="#{soortJaar.risSoort.titelEn}"/> Stats
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <h:panelGroup rendered="#{soortJaar.statszipAvailable == 'J'}">
+                                                <a href="#{teamsController.getStatsZipUrl(param.jaar, soortJaar.risSoort.afkorting)}"><h:graphicImage library="images" name="zip.gif"/></a>
+                                            </h:panelGroup>
+                                        </th>
+                                    </tr>
+                                </ui:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="infoitemonder">
+                </div>
+            </div>
+        </center>
+    </ui:define>
+</ui:composition>

@@ -1,0 +1,120 @@
+.div_test{
+    background-image: url(../resources/images/new/FotoImpressie.png);
+    background-repeat: no-repeat;
+    background-position: top;
+    text-align: center;
+    height: 254px;
+    width: 357px;
+}
+.div_infoitem_title {
+    font-family:Verdana, Geneva, sans-serif;
+    font-size:18px;
+    font-weight: bold;
+    color: #FFF;
+    position: relative;
+    top: 10px;
+    text-align: center;
+}
+.div_infoitem_title_2 {
+    font-family:Verdana, Geneva, sans-serif;
+    font-size:18px;
+    font-weight: bold;
+    color: #000;
+    text-align: center;
+    position: relative;
+    top: -10px;
+}
+.infoitemtitel {
+    font-family:Verdana, Geneva, sans-serif;
+    font-size:18px;
+    color: #FFF;
+    text-align: left;
+    height: 41px;
+}
+.infoitemtitel label {
+    padding-top: 12px;
+    margin-left: 20px;
+    display: block;
+}
+.infoitemboven {
+    background: url(../resources/images/new/boven.png) no-repeat top center ;
+    width: 722px;
+    height: 41px;
+}
+.infoitemmidden { 
+    position: relative;
+    clear: both;
+    background: url(../resources/images/new/midden.png) repeat-y top center; 
+    width: 722px;
+}
+.infoitemonder {
+    height: 19px;
+    width: 722px;
+    background: url(../resources/images/new/onder.png) no-repeat bottom center; 
+    position: relative;
+}
+.infoitemcontent {
+    background-color: #EAEAEA;
+    width: 680px;
+    margin-top:0px;
+    margin-left: 25px;
+    margin-right: 25px;
+    text-align: left;
+    overflow: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+
+.titel {
+    color : white;
+    font-weight: bold
+}
+.div_wedstrijdslijst {
+    text-align: center;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.div_pagina_title {
+    font-size: x-large;
+    font-weight: bold;
+    border: thin;
+    border-color: white;
+    border-bottom: 2px;
+}
+.div_wedstrijdslijst {
+    text-align: center;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.div_teamlijst {
+    text-align: center;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.div_sponsors {
+}
+A {
+    color: #000000;
+}
+A:active {
+    color: #000000;
+}
+A:visited {
+    color: #000000;
+}
+.link_A:active {
+    color: #000000;
+    font-weight: bold;
+    background-color: #666666;
+}
+.link_A:visited {
+    color: #000000;
+    font-weight: bold;
+    background-color: #666666;
+}
+.link_A:link {
+    color: #000000;
+    font-weight: bold;
+    background-color: #666666;
+}

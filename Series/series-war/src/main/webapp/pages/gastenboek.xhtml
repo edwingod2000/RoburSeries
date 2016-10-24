@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/hoofdpagina.xhtml"
+      >
+
+    <f:metadata>
+        <f:event type="preRenderView" listener="#{gastenboekController.executeOphalenGastenboekInfo}" />
+    </f:metadata>
+
+    <ui:define name="content">
+        <center>
+            <h:form id="gastenboekForm">
+                <br/>
+                <div class="infolijst">
+                    <div class="infoitemboven">
+                        <div class="infoitemtitel">
+                            <label>
+                                <info:taalkeuze nl="Gastenboek jaren" en="Guestbook years"/>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="infoitemmidden">
+                        <div class="infoitemcontent">
+                            <ui:repeat var="jaar" value="#{gastenboekController.gastenboekJaren}">
+                                <h:link outcome="/pages/gastenboek.faces?jaar=#{jaar.jaar}" value="#{jaar.jaar}"/>
+                                &#160;&#160;
+                            </ui:repeat>
+                        </div>
+                    </div>
+                    <div class="infoitemonder">
+                    </div>
+
+                    <h:commandButton styleClass="seriesButton" action="#{gastenboekController.executeNaarNieuw}" value="Teken Gastenboek" rendered="#{seriesSessionTO.dutch}"/>
+                    <h:commandButton styleClass="seriesButton" action="#{gastenboekController.executeNaarNieuw}" value="Sign Guestbook" rendered="#{not seriesSessionTO.dutch}"/>
+                    <br/><br/>
+                    <ui:repeat var="bericht" value="#{gastenboekController.gastenboekInfo}">
+                        <div class="infoitemboven">
+                            <div class="infoitemtitel">
+                                <label>
+                                    <h:outputText value="#{bericht.naam}" escape="true"/>
+                                    <info:taalkeuze nl=" schreef op " en=" wrotes on "/>
+                                    <h:outputText value="#{bericht.datum }">
+                                         <f:convertDateTime pattern="dd-MM-yyyy"/>
+                                    </h:outputText>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="infoitemmidden">
+                            <div class="infoitemcontent">
+                                <h:outputText escape="true" value="#{bericht.opmerking}" />
+                                <br/><br/>
+                                <h:panelGroup rendered="#{not empty bericht.homepage and not empty bericht.homepagenaam}">
+                                    <a href="#{bericht.homepage}" target="_NEW">
+                                        <h:graphicImage library="images" name="ico_home.gif" style="border: 0px" alt="#{bericht.homepagenaam}" title="#{bericht.homepagenaam}"/>
+                                    </a>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{empty bericht.homepage and not empty bericht.homepagenaam}">
+                                    <h:graphicImage library="images" name="ico_home.gif" style="border: 0px" alt="#{bericht.homepagenaam}" title="#{bericht.homepagenaam}"/>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{not empty bericht.homepage and empty bericht.homepagenaam}">
+                                    <a href="#{bericht.homepage}" target="_NEW">
+                                        <h:graphicImage library="images" name="ico_home.gif" style="border: 0px" alt="#{bericht.homepage}" title="#{bericht.homepage}"/>
+                                    </a>
+                                </h:panelGroup>
+                                &nbsp;
+                                <h:panelGroup rendered="#{not empty bericht.email}">
+                                    <a href="mailto:#{bericht.email}">
+                                        <h:graphicImage library="images" name="mail.gif" style="border: 0px" alt="Mail" title="Mail"/>
+                                    </a>
+                                </h:panelGroup>
+                            </div>
+                        </div>
+                        <div class="infoitemonder">
+                        </div>
+                        <br/>
+                    </ui:repeat>
+                </div>
+            </h:form>
+        </center>
+    </ui:define>
+
+</ui:composition>

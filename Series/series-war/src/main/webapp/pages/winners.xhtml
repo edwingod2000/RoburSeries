@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE table SYSTEM "/resources/entities.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/hoofdpagina.xhtml"
+                
+                xmlns:c="http://java.sun.com/jsp/jstl/core">
+
+    <ui:define name="content">
+        <h:panelGroup rendered="#{param.archief == 'J'}">
+            <ui:include src="/pages/archief.xhtml"/>
+        </h:panelGroup>
+        <center>
+            <br/>
+            <div class="infolijst">
+                <div class="infoitemboven">
+                    <div class="infoitemtitel">
+                        <label>Winnende Teams / Winning Teams <h:outputText value="#{param.jaar}"/></label>
+                    </div>
+                </div>
+                <div class="infoitemmidden">
+                    <div class="infoitemcontent">
+                        <table width="650" cellspacing="0" cellpadding="0" class="noborder">
+                            <tbody>
+                                <ui:repeat var="soortJaar" value="#{teamsController.ophalenSoorten(param.jaar)}">
+                                    <h:panelGroup rendered="#{not empty teamsController.ophalenTeamsEindstand(param.jaar, soortJaar.risSoort.afkorting)}">
+                                    <tr>
+                                        <td colspan="2"><div class="wedstrijddatum"><info:taalkeuze nl="#{soortJaar.risSoort.titelNl}" en="#{soortJaar.risSoort.titelEn}"/></div></td>
+                                    </tr>
+                                    </h:panelGroup>
+                                    <ui:repeat var="team" value="#{teamsController.ophalenTeamsEindstand(param.jaar, soortJaar.risSoort.afkorting)}">
+                                        <tr>
+                                            <td><h:outputText value="#{team.eindstand}"/></td>
+                                            <td><h:outputText value="#{team.naam}"/></td>
+                                        </tr>
+                                    </ui:repeat>
+                                    <tr>
+                                        <td colspan="2"><br/></td>
+                                    </tr>
+                                </ui:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="infoitemonder">
+                </div>
+    
+                <br/>
+
+                <div class="infoitemboven">
+                    <div class="infoitemtitel">
+                        <label>Persoonlijke prijzen / Personal Prices <h:outputText value="#{param.jaar}"/></label>
+                    </div>
+                </div>
+                <div class="infoitemmidden">
+                    <div class="infoitemcontent">
+                        <table width="650" cellspacing="0" cellpadding="0" class="noborder">
+                            <tbody>
+                                <ui:repeat var="soortJaar" value="#{teamsController.ophalenSoorten(param.jaar)}">
+                                    <h:panelGroup rendered="#{not empty teamsController.ophalenPersonalPrices(param.jaar, soortJaar.risSoort.afkorting)}">
+                                    <tr>
+                                        <td colspan="2"><div class="wedstrijddatum"><info:taalkeuze nl="#{soortJaar.risSoort.titelNl}" en="#{soortJaar.risSoort.titelEn}"/></div></td>
+                                    </tr>
+                                    </h:panelGroup>
+                                    <ui:repeat var="persoonlijkePrijs" value="#{teamsController.ophalenPersonalPrices(param.jaar, soortJaar.risSoort.afkorting)}">
+                                            <h:panelGroup rendered="#{persoonlijkePrijs.type == 'B'}">
+                                                <tr>
+                                                    <td colspan="3"><div class="soortprijs"><h:outputText value="Beste Hitter #{soortJaar.risSoort.titelNl} / Best Hitter #{soortJaar.risSoort.titelEn}"/></div></td>
+                                                </tr>
+                                                <h:panelGroup rendered="#{not empty persoonlijkePrijs.foto}">
+                                                    <tr>
+                                                        <td colspan="3"><div class="prijsfoto"><a href="#{persoonlijkePrijs.foto}"><img border="0" src="#{persoonlijkePrijs.foto}" width="100px"/></a></div></td>
+                                                    </tr>
+                                                </h:panelGroup>
+                                                <tr>
+                                                    <td><h:outputText value="#{persoonlijkePrijs.naam}"/></td>
+                                                    <td>(<h:outputText value="#{persoonlijkePrijs.risTeam.naam}"/>)</td>
+                                                    <td><h:outputText value="AVG: #{persoonlijkePrijs.gemiddelde}"/></td>
+                                                </tr>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{persoonlijkePrijs.type == 'P'}">
+                                                <tr>
+                                                    <td colspan="3"><div class="soortprijs"><h:outputText value="Beste Pitcher #{soortJaar.risSoort.titelNl} / Best Pitcher #{soortJaar.risSoort.titelEn}"/></div></td>
+                                                </tr>
+                                                <h:panelGroup rendered="#{not empty persoonlijkePrijs.foto}">
+                                                    <tr>
+                                                        <td colspan="3"><div class="prijsfoto"><a href="#{persoonlijkePrijs.foto}"><img border="0" src="#{persoonlijkePrijs.foto}" width="100px"/></a></div></td>
+                                                    </tr>
+                                                </h:panelGroup>
+                                                <tr>
+                                                    <td><h:outputText value="#{persoonlijkePrijs.naam}"/></td>
+                                                    <td>(<h:outputText value="#{persoonlijkePrijs.risTeam.naam}"/>)</td>
+                                                    <td><h:outputText value="ERA: #{persoonlijkePrijs.gemiddelde}"/></td>
+                                                </tr>
+                                            </h:panelGroup>
+                                        <tr><td colspan="3"><br/></td></tr>
+                                    </ui:repeat>
+                                    <tr>
+                                        <td colspan="2"><br/></td>
+                                    </tr>
+                                </ui:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="infoitemonder">
+                </div>
+            </div>
+        </center>
+    </ui:define>
+</ui:composition>

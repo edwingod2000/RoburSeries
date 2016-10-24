@@ -1,0 +1,227 @@
+body {
+    font-family: Verdana, sans-serif;
+}
+.main {
+    width: 100%;
+}
+.centeredcontent {
+    width: 938px;
+    margin: auto;
+    text-align: center;
+}
+.logo {
+    background-image:url(../resources/images/new/logo.png);
+    background-repeat:no-repeat;
+    height: 102px;
+    width: 440px;
+    float: left;
+}
+.div_language {
+    text-align: center;
+    background-position: center;
+    width: 37px;
+    height: 37px;
+    float: right;
+    margin-top: 70px;
+}
+a.languageLink {
+    background-color: #FFFFFF !important;
+}
+.div_header {
+    background-image:url(../resources/images/new/header.png);
+    background-repeat:no-repeat;
+    height:40px;
+    width: 938px;
+    float: left;
+}
+.div_topmenu {
+    background-position: center;
+    background-image:url(../resources/images/new/header.png);
+    background-repeat: no-repeat;
+    height:32px;
+    float: left;
+    width: 100%
+}
+div.div_topmenu .ddsmoothmenu {
+    width: 850px;
+    margin: auto;
+    text-align: center;
+    background: none;
+}
+.div_titel {
+    background-image:url(../resources/images/new/titel_nl.png);
+    background-repeat:no-repeat;
+    background-position:center;
+    width:100%;
+    background-color: black;
+    height:188px;
+	float: left;
+}
+.div_seperator {
+    background-image:url(../resources/images/schaduw.gif);
+    background-repeat:repeat-x;
+    background-position:center;
+    height: 10px;
+    width: 100%;
+    float: left;
+}
+.div_content {
+    background-image:url(../resources/images/new/body.png);
+    background-repeat:no-repeat;
+    border: medium;
+    height:500px;
+    width: 938px;
+    float: left;
+}
+.div_datum_nl {
+    color: white;
+    font-family: sans-serif;
+    font-size: x-large;
+    font-weight: bold;
+    margin: auto;
+    padding-right: 100px;
+    padding-top: 100px;
+    text-align: right;
+    width: 938px;    
+}
+.div_datum {
+    display: inline;
+    text-align: center;
+    width: 166px;
+    height: 58px;
+}
+.div_datum_en {
+    color: white;
+    font-family: sans-serif;
+    font-size: x-large;
+    font-weight: bold;
+    margin: auto;
+    padding-right: 100px;
+    padding-top: 100px;
+    text-align: right;
+    width: 938px;    
+}
+.div_impressie {
+    background-image: url(../resources/images/new/FotoImpressie.png);
+    background-repeat: no-repeat;
+    text-align: center;
+    float: right;
+    width: 357px;
+    height: 254px;
+    padding-right: 50px;
+    margin-top: 200px;
+}
+.div_impressie_foto {
+    background-image: url(../resources/images/new/empty.gif);
+    background-position: top;
+    background-repeat: no-repeat;
+    margin-top: 10px;
+    padding-left: 15px;
+    width: 325px;
+    height: 215px;
+}
+.div_impressie_titel_nl {
+    background-image: url(../resources/images/new/FotoImpressie_nl.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 88px;
+    height: 18px;
+    padding-left: 250px;
+}
+.div_impressie_titel_en {
+    background-image: url(../resources/images/new/FotoImpressie_en.png);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.div_contentmenu {
+    background-image: url(../resources/images/new/leftmenu.png);
+    background-repeat: no-repeat;
+    float: left;
+    width: 198px;
+    height: 243px;
+    margin-top: 230px;
+}
+.div_contentmenu_divider {
+    background-image: url(../resources/images/new/menu_divider.jpg);
+    background-repeat: no-repeat;
+    margin-left: 18px;
+    margin-top: 0px;
+    width: 163px;
+    height: 4px;
+}
+.div_contentmenu_entry1 {
+    background-position: center;
+    margin-left: 3px;
+    margin-top: 14px;
+}
+.div_contentmenu_entry2 {
+    background-position: center;
+    margin-left: 3px;
+    margin-top: 8px;
+}
+.div_contentmenu_entry3 {
+    background-position: center;
+    margin-left: 3px;
+    margin-top: 8px;
+}
+.div_seriesurl {
+    background-image: url(../resources/images/new/seriesWebsite.png);
+    background-repeat: no-repeat;
+    height: 19px;
+    width: 180px;
+    margin-top: 10px;
+    margin-left: 40px;
+}
+.div_flyer {
+    background-position: right;
+    background-repeat: no-repeat;
+    float: left;
+    position: relative;
+    display: inline;
+    left: -130px;
+}
+.wedstrijddatum {
+    font-size: x-large;
+    color: red;
+    padding-top: 5px;
+}
+.infotd {
+    vertical-align: top;
+}
+div.archief a:active  {
+    COLOR: #000000;
+    font-weight: bold;
+    background-color: #666666;    
+}
+div.archief a:visited  {
+    COLOR: #000000;
+    font-weight: bold;
+    background-color: #666666;    
+}
+div.archief a:link  {
+    COLOR: #000000;
+    font-weight: bold;
+    background-color: #666666;    
+}
+div.soortprijs {
+    font-weight: bold;
+}
+.soortlijsttitel {
+    display: inline;
+    font-size: medium;
+    font-weight: bold;
+}
+.poule {
+    vertical-align: top;
+}
+.div_breadcrumb {
+    height: 10px;
+    line-height: 10px;
+    font-size: smaller;
+}
+div.facebook {
+    position: relative;
+    top: -33px;
+    width: 50px;
+    left: -95px;
+}

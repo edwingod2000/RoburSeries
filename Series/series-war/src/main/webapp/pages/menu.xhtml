@@ -1,0 +1,57 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/bsm/bsmmain.xhtml"
+      >
+
+  <!-- Menu Cell -->
+<script>
+  function verwerkHeaderMenuKeuze(menuitem) {
+    document.startpaginaForm.currentMenu.value=menuitem;
+    document.startpaginaForm.submit();
+  }
+</script>
+<h:form>
+    <h:inputHidden value="#{menuController.currentMenu}" />
+  <table align="left" cellpadding="4" cellspacing="4">
+    <tr>
+	  <td>
+              <div class="mainmenu">
+                  <div id="smoothmenu" class="ddsmoothmenu">
+                      <ul id="menu">
+                          <li><a href="#">Home</a></li>
+                          <li>
+                              <a href="#"><info:taalkeuze nl="Toenooi" en="Tournament"/></a>
+                              <ul>
+                                  <li><a href="#">Organisatie</a></li>
+                              </ul>
+                          </li>
+                          <li>School</li>
+                          <li>Series</li>
+                          <li>Series 2010</li>
+                          <li>Sponsors</li>
+                          <li><info:taalkeuze nl="Gastenboek" en="Guestbook"/></li>
+                          <li><info:taalkeuze nl="Archief" en="Archive"/></li>
+                      </ul>
+                  </div>
+              </div>
+	  </td>
+	</tr>
+  </table>
+  <table align="right" cellpadding="4" cellspacing="4">
+    <tr>
+        <h:panelGroup rendered="#{seriesSessionTO.dutch}">
+            <td><h:commandLink action="#{seriesSessionTO.switchLanguage()}"><img ALT="Switch to English" TITLE="Switch to English" border="0" src="img/flag_uk.gif"/></h:commandLink></td>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{seriesSessionTO.dutch}">
+            <td><h:commandLink action="#{seriesSessionTO.switchLanguage()}"><img ALT="Kies Nederlands" TITLE="Kies Nederlands" border="0" src="img/flag_nl.gif"/></h:commandLink></td>
+        </h:panelGroup>
+	</tr>
+  </table>
+</h:form>
+  
+</ui:composition>

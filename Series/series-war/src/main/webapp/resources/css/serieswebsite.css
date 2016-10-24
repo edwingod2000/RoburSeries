@@ -1,0 +1,285 @@
+  .div_contentmenu {
+    position: relative;
+    background-image: url(../images/new/leftmenu.png);
+    background-repeat: no-repeat;
+    background-position: top;
+    text-align: center;
+    top: -110px;
+    left: -320px;
+    height: 243px;
+  }
+  .div_contentmenu_divider {
+    position: relative;
+    top: 14px;
+    background-image: url(../images/new/menu_divider.jpg);
+    background-repeat: no-repeat;
+    background-position: top;
+    height: 6px;
+  }
+  .div_contentmenu_entry {
+	position: relative;
+	background-position: center;
+    text-align: center;
+    top: 12px;
+  }
+  .div_seriesurl {
+    position: relative;
+    background-image: url(../images/new/seriesWebsite.png);
+    background-repeat: no-repeat;
+    text-align: center;
+    background-position: center;
+    height: 19px;
+    top: -90px;
+    left: -320px;
+  }
+  .div_impressie {
+    position: relative;
+    background-image: url(../images/new/FotoImpressie.png);
+    background-repeat: no-repeat;
+    background-position: top;
+    text-align: center;
+    top: 170px;
+    left: 240px;
+    height: 254px;
+  }
+  .div_test{
+  	position: relative;
+	background-image: url(../images/new/FotoImpressie.png);
+	background-repeat: no-repeat;
+	background-position: top;
+	text-align: center;
+	height: 254px;
+	width: 357px;
+	top: 230px;
+	left: 830px;
+  }
+  .div_impressie_foto {
+  	position: relative;
+    background-image: url(../images/empty.gif);
+    background-position: top;
+    background-repeat: no-repeat;
+    top: 10px;
+    height: 215px;
+  }
+  .div_impressie_titel_nl {
+  	position: relative;
+  	top: 14px;
+  	left: 0px;
+    background-image: url(../images/new/FotoImpressie_nl.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 19px;
+  }
+  .div_impressie_titel_en {
+  	position: relative;
+  	top: 14px;
+  	left: 0px;
+    background-image: url(../images/new/FotoImpressie_en.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 19px;
+  }
+  .div_infoitem_title {
+  	position: relative;
+  	top: 10px;
+	font-family:Verdana, Geneva, sans-serif;
+	font-size:18px;
+	font-weight: bold;
+	color: #FFF;
+	text-align: center;
+  }
+  .div_infoitem_title_2 {
+  	position: relative;
+  	top: -10px;
+	font-family:Verdana, Geneva, sans-serif;
+	font-size:18px;
+	font-weight: bold;
+	color: #000;
+	text-align: center;
+  }
+  .infoitemtitel {
+	position: relative;
+	top:14px;
+	left: 24px;
+	font-family:Verdana, Geneva, sans-serif;
+	font-size:18px;
+	color: #FFF;
+	text-align: left;
+  }
+  .infoitemboven {
+	background: url(../images/new/boven.png) no-repeat top center ;
+	width: 722px;
+	height: 41px;
+  }
+  .infoitemmidden { 
+  	position: relative;
+  	background: url(../images/new/midden.png) repeat-y top center; 
+	width: 722px;
+	clear: both;
+  }
+  .infoitemonder {
+  	position: relative;
+  	height: 19px;
+	width: 722px;
+	background: url(../images/new/onder.png) no-repeat bottom center; 
+  }
+  .infoitemcontent {
+	background-color: #EAEAEA;
+	width: 680px;
+	top: 10px;
+	margin-top:0px;
+	margin-left: 25px;
+	margin-right: 25px;
+	text-align: left;
+	overflow: auto;
+	overflow-x: auto;
+	overflow-y: hidden;
+  }
+  .div_logo {
+	position:relative;
+	background-image:url(../images/new/logo.png);
+	background-position:center;
+	background-repeat:no-repeat;
+	height:112px;
+  	left:-240px;
+  }
+  .div_language {
+	position:relative;
+	text-align: center;
+	background-position: center;
+	top: 75px;
+	left: 680px;
+  }
+  .div_topmenu {
+    background-position: center;
+    background-image:url(../images/new/header.png);
+    background-repeat: no-repeat;
+    height:28px;
+    text-align: center;
+    vertical-align: top;
+    width:100%;
+  }
+  .div_header {
+    position:relative;
+    background-image:url(../images/new/header.png);
+    background-position:center;
+    background-repeat:no-repeat;
+    height:40px;
+  }
+  .div_seperator {
+    background-image:url(../images/schaduw.gif);
+    background-repeat:repeat-x;
+    background-position:center;
+    vertical-align: top;
+    height:10px;
+    width:100%
+  }
+  .div_titel {
+    position:relative;
+    background-image:url(../images/new/titel_nl.png);
+    background-repeat:no-repeat;
+    background-position:center;
+    width:100%;
+    background-color: black;
+    height:188px
+  }
+  .div_datum_nl {
+    position:relative;
+    background-position: top;
+    background-position:center;
+    text-align: center;
+    font-weight: bold;
+	font-family: sans-serif;
+	font-size: x-large;
+	color: white;
+    top: -100px;
+    left: 350px;
+    height:58px
+  }
+  .div_datum_en {
+    position:relative;
+    background-position: top;
+    background-position:center;
+	font-family: sans-serif;
+    text-align: center;
+    font-weight: bold;
+    font-size: x-large;
+	color: white;
+    top: -100px;
+    left: 350px;
+    height:58px
+  }
+  .div_content {
+    position: relative;
+    background-image:url(../images/new/body.png);
+    background-repeat:no-repeat;
+    background-position:top;
+    border: medium;
+    height:500px;
+  }
+  .titel {
+  	color : white;
+  	font-weight: bold
+  }
+  .div_wedstrijdslijst {
+  	position: relative;
+  	text-align: center;
+  	background-position: center;
+  	background-repeat: no-repeat;
+  }
+  .div_pagina_title {
+    font-size: x-large;
+    font-weight: bold;
+    border: thin;
+    border-color: white;
+    border-bottom: 2px;
+  }
+  .div_wedstrijdslijst {
+  	position: relative;
+  	text-align: center;
+  	background-position: center;
+  	background-repeat: no-repeat;
+  }
+  .div_teamlijst {
+  	position: relative;
+  	text-align: center;
+  	background-position: center;
+  	background-repeat: no-repeat;
+  }
+  .div_sponsors {
+    position:relative;
+    top:10px;
+    left:80px;
+  }
+  A {
+  	color: #000000;
+  }
+  A:active {
+  	color: #000000;
+  }
+  A:visited {
+  	color: #000000;
+  }
+  .link_A:active {
+	color: #000000;
+	font-weight: bold;
+	background-color: #666666;
+  }
+  .link_A:visited {
+	color: #000000;
+	font-weight: bold;
+	background-color: #666666;
+  }
+  .link_A:link {
+	color: #000000;
+	font-weight: bold;
+	background-color: #666666;
+  }
+  .div_flyer {
+  	position: relative;
+    background-position: right;
+    background-repeat: no-repeat;
+    text-align: right;
+    top: -550px;
+  }
+  

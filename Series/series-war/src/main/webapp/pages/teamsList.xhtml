@@ -1,0 +1,71 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:info="http://java.sun.com/jsf/composite/components/info"
+                template="/templates/hoofdpagina.xhtml">
+
+    <ui:define name="content">
+        <h:form>
+            <h:panelGroup rendered="#{param.archief == 'J'}">
+                <ui:include src="/pages/archief.xhtml"/>
+            </h:panelGroup>
+            <center>
+                <div class="div_infoitem_title"><h:outputText value="Teams #{param.jaar}" /></div>
+                <div class="div_infoitem_title_2"><h:outputText value="Teams #{param.jaar}" /></div>
+                <div class="infolijst">
+                    <ui:repeat var="soort" value="#{teamsController.ophalenSoorten(param.jaar)}">
+                        <br/>
+                        <div class="infoitemboven">
+                            <div class="infoitemtitel">
+                                <label>
+                                    <info:taalkeuze nl="#{soort.risSoort.titelNl}" en="#{soort.risSoort.titelEn}" />
+                                </label>
+                            </div>
+                        </div>
+                        <div class="infoitemmidden">
+                            <div class="infoitemcontent">
+                                <ui:repeat var="team" value="#{teamsController.ophalenTeams(param.jaar, soort.risSoort.afkorting)}">
+
+                                    <table width="500" cellspacing="0" cellpadding="2" background="img/infoBackground.png">
+                                        <tbody>
+                                            <tr>
+                                                <td width="400">
+                                                    <font size="4"><h:outputText value="#{team.naam}" /></font>
+                                                </td>
+                                                <td>
+                                                    <h:link outcome="/pages/lineup.xhtml">
+                                                        <f:param name="jaar" value="#{param.jaar}"/>
+                                                        <f:param name="team" value="#{team.volgnr}"/>
+                                                        <f:param name="archief" value="#{param.archief}"/>
+                                                        <h:graphicImage library="images" name="lineup_web.gif" style="border:0; vertical-align:absbottom" />
+                                                    </h:link>
+                                                </td>
+                                                <td>
+                                                    <h:link outcome="/pages/stats.faces">
+                                                        <f:param name="jaar" value="#{param.jaar}"/>
+                                                        <f:param name="soort" value="#{soort.risSoort.afkorting}"/>
+                                                        <f:param name="team" value="#{team.volgnr}"/>
+                                                        <f:param name="archief" value="#{param.archief}"/>
+                                                        <h:graphicImage library="images" name="stats_web.gif" style="border:0; vertical-align:absbottom" />
+                                                    </h:link>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </ui:repeat>
+                            </div>
+                        </div>
+                        <div class="infoitemonder">
+                        </div>
+                    </ui:repeat>
+                </div>
+            </center>
+        </h:form>
+        <br/>
+    </ui:define>
+</ui:composition>
+
+
