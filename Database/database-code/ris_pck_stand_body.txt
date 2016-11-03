@@ -1,0 +1,409 @@
+create or replace package body ris_pck_stand is
+  ------------------------------------------------------------------------------------------------------------------------
+  procedure stand
+  (
+    p_taal in varchar2 default null
+   ,p_jaar in varchar2 default null
+  ) is
+  
+    cursor v_c_soort is
+      select srt.afkorting
+            ,srt.titel_nl
+            ,srt.titel_en
+        from ris_soort srt
+            ,ris_soort_jaar sjr
+       where srt.afkorting = sjr.afkorting
+         and sjr.jaar = to_number(p_jaar)
+         and srt.afkorting not in ('DEMOHB', 'DEMOSB')
+       order by srt.display_volgnr;
+  
+  begin
+    ris_pck_alg.header('false');
+    htp.bodyopen;
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          'l_s_bbs.jpg" align=absbottom><font size=6>&nbsp;&nbsp;Stand / Ranking ' ||
+          p_jaar || '</font>');
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.p('<H1>');
+    for v_r_soort in v_c_soort loop
+      htp.p('<a href="/pls/ris/ris_pck_stand.toon_stand?p_soort=' ||
+            v_r_soort.afkorting || '&p_jaar=' || p_jaar || '">' ||
+            v_r_soort.titel_nl || ' Stand / ' || v_r_soort.titel_en ||
+            ' Ranking' || '</a>');
+      htp.br;
+    end loop;
+  
+    if ris_pck_alg.geef_syspar('WINNENDE_TEAMS_PAGINA') is not null then
+      htp.br;
+      htp.p('<a href="/ris-doc/' || p_jaar || '/' ||
+            ris_pck_alg.geef_syspar('WINNENDE_TEAMS_PAGINA') ||
+            '">Winnende teams / Winning teams</a>');
+    end if;
+  
+    if ris_pck_alg.geef_syspar('PERSOONLIJKE_PRIJZEN_PAGINA') is not null then
+      htp.br;
+      htp.p('<a href="/ris-doc/' || p_jaar || '/' ||
+            ris_pck_alg.geef_syspar('PERSOONLIJKE_PRIJZEN_PAGINA') ||
+            '">Persoonlijke prijzen / Personal prices</a>');
+    end if;
+  
+    htp.p('</H1>');
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------------------------------------------
+  procedure toon_stand
+  (
+    p_soort in varchar2 default null
+   ,p_jaar in varchar2 default null
+   ,p_beheer in varchar2 default null
+  ) is
+  
+    cursor v_c_soort is
+      select srt.afkorting
+            ,srt.titel_nl
+            ,srt.titel_en
+        from ris_soort srt
+            ,ris_soort_jaar sjr
+       where srt.afkorting = p_soort
+         and srt.afkorting = sjr.afkorting
+         and sjr.jaar = to_number(p_jaar);
+  
+  begin
+    htp.htmlopen;
+    if p_beheer = 'true' then
+      ris_pck_alg.header('true');
+      htp.p('<META HTTP-EQUIV="Refresh" CONTENT="' ||
+            ris_pck_alg.geef_syspar('REFRESH_RAPPORTEN') ||
+            ';URL=/pls/ris/ris_pck_stand.toon_stand?p_soort=' || p_soort || '">');
+      htp.p('<body>');
+      htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Rapporten</font>');
+      htp.p('<BR><BR><BR>');
+    else
+      ris_pck_alg.header('false');
+      htp.p('<body>');
+    end if;
+  
+    htp.p('<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">');
+    htp.p('<link rel="stylesheet" href="/ris-style/series.css" type="text/css">');
+  
+    ris_pck_alg.norightclick;
+  
+    htp.headclose;
+  
+    htp.bodyopen(cattributes => 'bgcolor="#FFFFFF" text="#000000"');
+  
+    htp.p('<table>');
+    htp.p('<tr>');
+    htp.p('<td>');
+    for v_r_soort in v_c_soort loop
+      htp.p('<div class="paginatitel">' || v_r_soort.titel_nl ||
+            ' Stand / ' || v_r_soort.titel_en || ' Ranking ' || p_jaar ||
+            '</div>');
+    end loop;
+    htp.p('</td>');
+  
+    if p_beheer = 'true' then
+      htp.p('<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="ris_pck_report.startpagina">[Terug]</a></td>');
+      htp.p('<td>');
+      htp.p('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:window.print()"><img border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            '/printer.jpg" width="30" alt="Printen"></a>');
+      htp.p('</td>');
+    else
+      htp.p('<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:history.back()">[Terug]</a></td>');
+    end if;
+    htp.p('</tr>');
+    htp.p('</table>');
+  
+    htp.p('</div>');
+  
+    toon_stand_poule(p_soort
+                    ,p_jaar);
+    htp.br;
+    toon_stand_final(p_soort
+                    ,p_jaar);
+  
+    if p_beheer = 'true' then
+      ris_pck_alg.menu;
+    end if;
+  
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------------------------------------------
+  procedure toon_stand_poule
+  (
+    p_soort in varchar2
+   ,p_jaar in varchar2
+  ) is
+  
+    v_s_poule              ris_teams.poule%type := null;
+    v_n_team_volgnr        number := 0;
+    v_n_aantal_wedstrijden number := 0;
+    v_n_punten             number := 0;
+    v_s_naam               varchar2(100) := null;
+    v_s_sessionid          varchar2(100) := to_char(sysdate
+                                                   ,'ddmmyyyyhh24miss');
+    v_s_huidige_poule      varchar2(100) := 'ANDERS';
+  
+    v_n_stand number := 0;
+  
+    cursor v_c_poules is
+      select distinct tem.poule
+        from ris_teams tem
+       where tem.soort = p_soort
+         and tem.jaar = to_number(p_jaar);
+  
+    cursor v_c_teams is
+      select tem.volgnr
+            ,tem.naam
+            ,tem.poulestand_offset
+        from ris_teams tem
+       where tem.poule = v_s_poule
+         and tem.soort = p_soort
+         and tem.jaar = to_number(p_jaar)
+       order by tem.naam;
+  
+    cursor v_c_wedstrijden_thuis_poule is
+      select nvl(wed.punten_voor
+                ,0) as punten_voor
+            ,nvl(wed.punten_tegen
+                ,0) as punten_tegen
+        from ris_teams tem
+            ,ris_wedstrijden_poule wed
+       where wed.team_volgnr = tem.volgnr
+         and wed.team_volgnr = v_n_team_volgnr
+         and wed.punten_tegen is not null
+         and wed.punten_voor is not null
+         and tem.jaar = to_number(p_jaar)
+         and wed.jaar = to_number(p_jaar);
+  
+    cursor v_c_wedstrijden_uit_poule is
+      select nvl(wed.punten_voor
+                ,0) as punten_voor
+            ,nvl(wed.punten_tegen
+                ,0) as punten_tegen
+        from ris_teams tem
+            ,ris_wedstrijden_poule wed
+       where wed.team2_volgnr = tem.volgnr
+         and wed.team2_volgnr = v_n_team_volgnr
+         and wed.punten_tegen is not null
+         and wed.punten_voor is not null
+         and tem.jaar = to_number(p_jaar)
+         and wed.jaar = to_number(p_jaar);
+  
+    cursor v_c_stand is
+      select tsd.*
+        from ris_temp_stand tsd
+       where tsd.sessionid = v_s_sessionid
+       order by tsd.poule
+               ,tsd.punten desc
+               ,tsd.gespeeld asc;
+  
+  begin
+    -- Ranking Poule wedstrijden
+    for v_r_poules in v_c_poules loop
+      v_s_poule := v_r_poules.poule;
+    
+      for v_r_teams in v_c_teams loop
+        v_n_team_volgnr        := v_r_teams.volgnr;
+        v_s_naam               := v_r_teams.naam;
+        v_n_aantal_wedstrijden := 0;
+        v_n_punten             := 0;
+      
+        for v_r_wedstrijden_thuis in v_c_wedstrijden_thuis_poule loop
+          v_n_aantal_wedstrijden := v_n_aantal_wedstrijden + 1;
+          if to_number(v_r_wedstrijden_thuis.punten_voor) >
+             to_number(v_r_wedstrijden_thuis.punten_tegen) then
+            v_n_punten := v_n_punten +
+                          to_number(ris_pck_alg.geef_syspar('PUNTEN_GEWONNEN'));
+          else
+            if to_number(v_r_wedstrijden_thuis.punten_voor) =
+               to_number(v_r_wedstrijden_thuis.punten_tegen) then
+              v_n_punten := v_n_punten +
+                            to_number(ris_pck_alg.geef_syspar('PUNTEN_GELIJK'));
+            else
+              v_n_punten := v_n_punten +
+                            to_number(ris_pck_alg.geef_syspar('PUNTEN_VERLOREN'));
+            end if;
+          end if;
+        end loop;
+      
+        for v_r_wedstrijden_uit in v_c_wedstrijden_uit_poule loop
+          v_n_aantal_wedstrijden := v_n_aantal_wedstrijden + 1;
+          if to_number(v_r_wedstrijden_uit.punten_voor) <
+             to_number(v_r_wedstrijden_uit.punten_tegen) then
+            v_n_punten := v_n_punten +
+                          to_number(ris_pck_alg.geef_syspar('PUNTEN_GEWONNEN'));
+          else
+            if to_number(v_r_wedstrijden_uit.punten_voor) =
+               to_number(v_r_wedstrijden_uit.punten_tegen) then
+              v_n_punten := v_n_punten +
+                            to_number(ris_pck_alg.geef_syspar('PUNTEN_GELIJK'));
+            else
+              v_n_punten := v_n_punten +
+                            to_number(ris_pck_alg.geef_syspar('PUNTEN_VERLOREN'));
+            end if;
+          end if;
+        end loop;
+      
+        -- Evt. Offset erbij optellen
+        if (v_r_teams.poulestand_offset is not null) then
+          v_n_punten := v_n_punten + v_r_teams.poulestand_offset;
+        end if;
+      
+        insert into ris_temp_stand
+          (naam
+          ,poule
+          ,gespeeld
+          ,punten
+          ,sessionid)
+        values
+          (v_s_naam
+          ,v_s_poule
+          ,v_n_aantal_wedstrijden
+          ,v_n_punten
+          ,v_s_sessionid);
+      
+      end loop;
+    end loop;
+  
+    htp.p('<table cellspacing=0 class="noborder" width="100%">');
+    htp.p('<tr><td valign="TOP">');
+    htp.p('<table cellspacing=0 class="tabel" width="100%">');
+  
+    v_n_stand := 1;
+    for v_r_stand in v_c_stand loop
+      if v_r_stand.poule != v_s_huidige_poule then
+        if v_s_huidige_poule != 'ANDERS' then
+          v_n_stand := 1;
+          htp.p('</table>');
+          htp.p('</td><td valign="TOP">');
+          htp.p('<table cellspacing=0 class="tabel" width="100%">');
+        end if;
+        htp.p('<tr>');
+        htp.p('<th colspan=4><font size="+1">Stand / Ranking Poule</font>&nbsp;&nbsp;<font size="+3">' ||
+              v_r_stand.poule || '</font></th>');
+        htp.p('</tr>');
+        htp.p('<tr>');
+        htp.p('<td>&nbsp;</td>');
+        htp.p('<td class="tableheader" align="left"><b>Team</b></td>');
+        htp.p('<td class="tableheader" align="center"><b>Gespeeld<br>Nr. of Games</b></td>');
+        htp.p('<td class="tableheader" align="center"><b>Punten<br>Points</b></td>');
+        htp.p('</tr>');
+      end if;
+      v_s_huidige_poule := v_r_stand.poule;
+    
+      htp.p('<tr>');
+      htp.p('<td>' || to_char(v_n_stand) || '</td>');
+      htp.p('<td>' || v_r_stand.naam || '</td>');
+      htp.p('<td align="center">' || to_char(v_r_stand.gespeeld) ||
+            '</td>');
+      htp.p('<td align="center">' || to_char(trunc(v_r_stand.punten)) ||
+            '</td>');
+      htp.p('</tr>');
+      v_n_stand := v_n_stand + 1;
+    end loop;
+    htp.p('</table>');
+    htp.p('</td>');
+    htp.p('</tr>');
+    htp.p('</table>');
+    htp.br;
+  
+    delete from ris_temp_stand tmp
+     where tmp.sessionid = v_s_sessionid;
+  
+  exception
+    when others then
+      htp.p('Fout');
+  end;
+  ------------------------------------------------------------------------------------------------------------------------
+  procedure toon_stand_final
+  (
+    p_soort in varchar2
+   ,p_jaar in varchar2
+  ) is
+  
+    v_b_gevonden     boolean := false;
+    v_s_naam         ris_teams.naam%type := null;
+    v_s_dummy        varchar2(1) := null;
+  
+    cursor v_c_finale_tonen is
+      select 'x'
+        from ris_teams tem
+       where tem.eindstand is not null
+         and tem.soort = p_soort
+         and tem.jaar = to_number(p_jaar);
+             
+    cursor v_c_team is
+      select tem.naam as naam
+           , tem.eindstand as eindstand
+        from ris_teams tem
+       where tem.eindstand is not null
+         and soort = p_soort
+         and tem.jaar = to_number(p_jaar)
+       order by tem.eindstand;
+  
+  begin
+    open v_c_finale_tonen;
+    fetch v_c_finale_tonen
+      into v_s_dummy;
+    if v_c_finale_tonen%found then
+        
+      htp.p('<table cellspacing=0 class="tabel" width="100%">');
+      htp.p('<tr>');
+      htp.p('<th colspan=2>Eindstand / Final Ranking ' || p_jaar ||
+            '</th>');
+      htp.p('</tr>');
+    
+      for v_r_team in v_c_team loop
+        htp.p('<tr>');
+        htp.p('<td>' || to_char(v_r_team.eindstand) || '.</td>');
+        htp.p('<td>' || v_r_team.naam || '</td>');
+        htp.p('</tr>');
+      end loop;        
+    
+      htp.p('</table>');
+      htp.br;
+      show_poule_commentaar(p_soort
+                           ,p_jaar);
+    
+    end if;
+    close v_c_finale_tonen;
+  
+  end;
+  ------------------------------------------------------------------------------------------------------------------------
+  procedure show_poule_commentaar
+  (
+    p_soort in varchar2
+   ,p_jaar in varchar2
+  ) is
+  
+    v_s_commentaar varchar2(1000);
+  
+    cursor c_commentaar is
+      select rpc.commentaar
+        from ris_poule_commentaar rpc
+       where rpc.jaar = to_number(p_jaar)
+         and rpc.afkorting = p_soort;
+  
+  begin
+    open c_commentaar;
+    fetch c_commentaar
+      into v_s_commentaar;
+    if c_commentaar%found then
+      htp.p('<table cellspacing=0 class="tabel" width="100%">');
+      htp.p('<tr><td>');
+      htp.p(v_s_commentaar);
+      htp.p('</td></tr>');
+      htp.p('</table>');
+    end if;
+    close c_commentaar;
+  
+  end;
+
+end ris_pck_stand;

@@ -1,0 +1,8 @@
+create or replace trigger ris_wmx_aur
+  after update on ris_wedstrijden_mix
+  for each row
+  
+begin
+  /* Store the rowid of updated records into global pl/sql table */
+  ris_pck_wmx_trg.vul_table(:new.rowid);
+end ris_wmx_aur;

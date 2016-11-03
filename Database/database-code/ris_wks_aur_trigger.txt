@@ -1,0 +1,82 @@
+create or replace trigger ris_wks_aur
+  after update on ris_wedstrijden_kruis  
+  for each row
+declare
+  -- local variables here
+  v_n_winnaar   number := 0;
+  v_n_verliezer number := 0;
+  v_n_jaar      number(4) := ris_pck_alg.geef_syspar('JAAR_SERIES');
+
+begin
+  -- Een wedstrijd is gespeeld waardoor het mogelijk is dat een finalewedstrijd
+  -- bekend wordt
+  if :new.punten_voor is not null and :new.punten_tegen is not null then
+    if to_number(:new.punten_voor) > to_number(:new.punten_tegen) then
+      v_n_winnaar   := :new.thuis_team;
+      v_n_verliezer := :new.uit_team;
+    else
+      v_n_winnaar   := :new.uit_team;
+      v_n_verliezer := :new.thuis_team;
+    end if;
+  
+    dbms_output.put_line('Winnaar: ' || v_n_winnaar);
+    dbms_output.put_line('Verliezer: ' || v_n_verliezer);
+    dbms_output.put_line('Soort: ' || :new.soort);
+    dbms_output.put_line('Jaar: ' || v_n_jaar);
+    dbms_output.put_line('Wedstrijdnummer: ' || :new.wedstrijd_nummer);
+  
+    -- Thuis Winnaar
+    update ris_wedstrijden_finale wed
+       set wed.thuis_nr = v_n_winnaar
+     where wed.thuis_wv = 'Winnaar' and wed.thuis_wed = :new.wedstrijd_nummer and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    update ris_wedstrijden_mix wed
+       set wed.thuis_nr = v_n_winnaar
+     where wed.thuis_wv = 'Winnaar' and wed.thuis_wed = :new.wedstrijd_nummer and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    -- Uit Winnaar
+    update ris_wedstrijden_finale wed
+       set wed.uit_nr = v_n_winnaar
+     where wed.uit_wv = 'Winnaar' and wed.uit_wed = :new.wedstrijd_nummer and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    update ris_wedstrijden_mix wed
+       set wed.uit_nr = v_n_winnaar
+     where wed.uit_wv = 'Winnaar' and wed.uit_wed = :new.wedstrijd_nummer and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    -- Thuis Verliezer
+    update ris_wedstrijden_finale wed
+       set wed.thuis_nr = v_n_verliezer
+     where wed.thuis_wv = 'Verliezer' and wed.thuis_wed = :new.wedstrijd_nummer and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    update ris_wedstrijden_mix wed
+       set wed.thuis_nr = v_n_verliezer
+     where wed.thuis_wv = 'Verliezer' and wed.thuis_wed = :new.wedstrijd_nummer and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    -- Uit Verliezer
+    update ris_wedstrijden_finale wed
+       set wed.uit_nr = v_n_verliezer
+     where wed.uit_wv = 'Verliezer' and wed.uit_wed = :new.wedstrijd_nummer and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    update ris_wedstrijden_mix wed
+       set wed.uit_nr = v_n_verliezer
+     where wed.uit_wv = 'Verliezer' and wed.uit_wed = :new.wedstrijd_nummer and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+  end if;
+
+exception
+  when others then
+    ris_pck_alg.foutafhandeling('Trigger wks_aur'
+                               ,sqlcode
+                               ,sqlerrm
+                               ,null);
+    commit;
+  
+end ris_wks_aur;

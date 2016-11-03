@@ -1,0 +1,630 @@
+create or replace package body ris_pck_krant is
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- Package alleen aanpassen onderaan bij de procedures pagina<x>
+  --
+  ----------------------------------------------------------------------------------------------------
+
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- startKrant
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure startKrant is
+  
+  begin
+    htp.p('<HTML>');
+    htp.p('<HEAD>');
+    htp.p('  <SCRIPT>');
+    htp.p('    function startKrant() {');
+    htp.p('      window.open("ris_pck_krant.bepaal_volgende", "krant", "fullscreen=yes,toolbar=no,status=no,menubar=no,scrollbars=no,resizable=no,directories=no,location=no");');
+    htp.p('    }');
+    htp.p('  </SCRIPT>');
+    htp.p('  <BODY onLoad="javascript:startKrant()">');
+    htp.p('  Starting.........');
+    htp.p('  </BODY>');
+    htp.p('  </HTML>');
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- header
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure header(p_titel_nl       in varchar2,
+                   p_titel_en       in varchar2,
+                   p_datum          in varchar2 default null,
+                   p_volgendepagina in varchar2) is
+  
+  begin
+    htp.p('<HTML>');
+    htp.p('<HEAD>');
+    htp.p('<META HTTP-EQUIV="Refresh" CONTENT="' ||
+          ris_pck_alg.geef_syspar('REFESH_KABELKRANT') ||
+          ';URL=/pls/ris/ris_pck_krant.' || p_volgendepagina || '">');
+    htp.p('<LINK HREF="/ris-style/krant_style.css" rel="STYLESHEET" type="text/css">');
+    htp.p('<TITLE>KabelKrant Robur ' || '''' || '58 - Series</TITLE>');
+    htp.p('</HEAD>');
+    htp.p('<CENTER>');
+    htp.bodyopen;
+    htp.tableopen;
+    htp.tablerowopen;
+    if p_datum is not null then
+      htp.tabledata('<h2>' || p_titel_nl || ' / ' || p_titel_en || '<BR>' ||
+                    p_datum || '</h2>',
+                    cattributes => 'valign="BOTTOM" class="tableheader"');
+    else
+      htp.tabledata('<h2>' || p_titel_nl || ' / ' || p_titel_en || '</h2>',
+                    cattributes => 'valign="BOTTOM" class="tableheader"');
+    end if;
+    htp.tablerowclose;
+    htp.tableclose;
+    --    htp.br;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- footer
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure footer is
+  
+  begin
+    htp.p('</CENTER>');
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- wedstrijden
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure wedstrijden(p_soort in varchar2, p_datum in varchar2) is
+  
+    v_n_aantal number := 0;
+    v_n_jaar   number(4) := to_number(ris_pck_alg.geef_syspar('JAAR_SERIES'));
+  
+    cursor c_wedstrijden is
+      select wed.*
+        from ris_v_wedstrijden wed
+       where trunc(wed.datum) = p_datum
+         and wed.soort in (p_soort, 'DEMO' || p_soort)
+         and wed.jaar = v_n_jaar
+       order by wed.tijdstip;
+  
+  begin
+    htp.tableopen;
+    for r_wedstrijden in c_wedstrijden loop
+      v_n_aantal := v_n_aantal + 1;
+      htp.tablerowopen;
+      htp.p('<td class="tabledata" width="5%">' || r_wedstrijden.tijdstip ||
+            '&nbsp;</td>');
+      htp.p('<td class="tabledata" width="5%" valign="bottom"><font color="blue"><small>[' ||
+            r_wedstrijden.wedstrijd_nummer ||
+            ']</xx-small></font>&nbsp;</td>');
+      htp.p('<td class="tabledata" width="29%">' ||
+            r_wedstrijden.display_thuis || '</td>');
+      htp.p('<td class="tabledata" width="2%">-</td>');
+      htp.p('<td class="tabledata" width="29%">' ||
+            r_wedstrijden.display_uit || '</td>');
+      if r_wedstrijden.punten_voor is not null then
+        htp.p('<td class="uitslag" width="10%">(' ||
+              r_wedstrijden.punten_voor || '-' ||
+              r_wedstrijden.punten_tegen || ')</td>');
+      else
+        --//        if r_wedstrijden.opmerking is not null and upper(r_wedstrijden.opmerking) != upper('Veld A') then
+        --          htp.p ('<td class="uitslag" width="10%">'||r_wedstrijden.opmerking||'</td>');
+        --        else
+        htp.p('<td class="uitslag" width="10%">&nbsp;</td>');
+        --        end if;
+      end if;
+      htp.tablerowclose;
+      if r_wedstrijden.opmerking is not null and
+         upper(r_wedstrijden.opmerking) != upper('Veld A') then
+        htp.tablerowopen;
+        htp.p('<td>&nbsp;</td>');
+        htp.p('<td colspan="4" class="uitslag" width="100%"><img src="/ris-img/arrow.gif" width="20">' ||
+              r_wedstrijden.opmerking || '</td>');
+        htp.tablerowclose;
+      end if;
+    end loop;
+  
+    if v_n_aantal = 0 then
+      htp.tablerowopen;
+      htp.p('<td align="center" class="tabledata" width="100%">Geen wedstrijden<br>No games</td>');
+      htp.tablerowclose;
+    end if;
+  
+    htp.tableclose;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- HIERONDER WORDEN DE PAGINA'S GEDEFINIEERD
+  --
+  ----------------------------------------------------------------------------------------------------
+  function bepaal_volgende(p_s_procedurenaam in varchar2 default null)
+    return varchar2 is
+  
+    v_b_gevonden      boolean := false;
+    v_n_volgnr        ris_krant.volgnr%type;
+    v_s_procedurenaam ris_krant.procedurenaam%type;
+    v_n_volgorde      number := null;
+  
+    cursor v_cur_huidig_volgnummer is
+      select krt.volgorde
+        from ris_krant krt
+       where krt.procedurenaam = p_s_procedurenaam;
+  
+    cursor v_cur_volgende is
+      select krt.procedurenaam
+        from ris_krant krt
+       where krt.volgorde = (select min(krt2.volgorde)
+                               from ris_krant krt2
+                              where krt2.volgorde > v_n_volgorde
+                                and krt2.tonen = 'J');
+  
+    cursor v_cur_begin is
+      select krt.procedurenaam
+        from ris_krant krt
+       where krt.volgorde = (select min(krt2.volgorde)
+                               from ris_krant krt2
+                              where krt2.tonen = 'J');
+  
+  begin
+    if p_s_procedurenaam is not null then
+      open v_cur_huidig_volgnummer;
+      fetch v_cur_huidig_volgnummer
+        into v_n_volgorde;
+      close v_cur_huidig_volgnummer;
+    
+      open v_cur_volgende;
+      fetch v_cur_volgende
+        into v_s_procedurenaam;
+      if v_cur_volgende%found then
+        v_b_gevonden := true;
+      end if;
+      close v_cur_volgende;
+    end if;
+    if v_b_gevonden = false then
+      open v_cur_begin;
+      fetch v_cur_begin
+        into v_s_procedurenaam;
+      close v_cur_begin;
+    end if;
+    return v_s_procedurenaam;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina1
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina1 is
+  
+    v_s_datum_string varchar2(100) := null;
+  
+  begin
+    v_s_datum_string := to_char(sysdate, 'Day', 'nls_date_language = Dutch') ||
+                        ' / ' ||
+                        to_char(sysdate,
+                                'Day',
+                                'nls_date_language = American') || ' ' ||
+                        to_char(sysdate, 'DD-MM-YYYY');
+  
+    header('Honkbal Vandaag',
+           'Baseball Today',
+           v_s_datum_string,
+           bepaal_volgende('pagina1'));
+    wedstrijden('HB', trunc(sysdate));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina2
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina2 is
+  
+    v_s_datum_string varchar2(100) := null;
+  
+  begin
+    v_s_datum_string := to_char(sysdate, 'Day', 'nls_date_language = Dutch') ||
+                        ' / ' ||
+                        to_char(sysdate,
+                                'Day',
+                                'nls_date_language = American') || ' ' ||
+                        to_char(sysdate, 'DD-MM-YYYY');
+  
+    header('Softbal Vandaag',
+           'Softball Today',
+           v_s_datum_string,
+           bepaal_volgende('pagina2'));
+    wedstrijden('SB', trunc(sysdate));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina3
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina3 is
+  
+    v_s_datum_string varchar2(100) := null;
+  
+  begin
+    v_s_datum_string := to_char(sysdate, 'Day', 'nls_date_language = Dutch') ||
+                        ' / ' ||
+                        to_char(sysdate,
+                                'Day',
+                                'nls_date_language = American') || ' ' ||
+                        to_char(sysdate, 'DD-MM-YYYY');
+  
+    header('Mini Series Vandaag',
+           'Mini Series Today',
+           v_s_datum_string,
+           bepaal_volgende('pagina3'));
+    wedstrijden('MINI', trunc(sysdate));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina4
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina4 is
+  
+    v_s_datum_string varchar2(100) := null;
+  
+  begin
+    v_s_datum_string := to_char(sysdate + 1,
+                                'Day',
+                                'nls_date_language = Dutch') || ' / ' ||
+                        to_char(sysdate + 1,
+                                'Day',
+                                'nls_date_language = American') || ' ' ||
+                        to_char(sysdate + 1, 'DD-MM-YYYY');
+    header('Honkbal Morgen',
+           'Baseball Tomorrow',
+           v_s_datum_string,
+           bepaal_volgende('pagina4'));
+    wedstrijden('HB', trunc(sysdate + 1));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina5
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina5 is
+  
+    v_s_datum_string varchar2(100) := null;
+  
+  begin
+    v_s_datum_string := to_char(sysdate + 1,
+                                'Day',
+                                'nls_date_language = Dutch') || ' / ' ||
+                        to_char(sysdate + 1,
+                                'Day',
+                                'nls_date_language = American') || ' ' ||
+                        to_char(sysdate + 1, 'DD-MM-YYYY');
+    header('Softbal Morgen',
+           'Softball Tomorrow',
+           v_s_datum_string,
+           bepaal_volgende('pagina5'));
+    wedstrijden('SB', trunc(sysdate + 1));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina6
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina6 is
+  
+    v_s_datum_string varchar2(100) := null;
+  
+  begin
+    v_s_datum_string := to_char(sysdate + 1,
+                                'Day',
+                                'nls_date_language = Dutch') || ' / ' ||
+                        to_char(sysdate + 1,
+                                'Day',
+                                'nls_date_language = American') || ' ' ||
+                        to_char(sysdate + 1, 'DD-MM-YYYY');
+    header('Mini Series Morgen',
+           'Mini Series Tomorrow',
+           v_s_datum_string,
+           bepaal_volgende('pagina6'));
+    wedstrijden('MINI', trunc(sysdate + 1));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina7
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina7 is
+  
+  begin
+    header('Honkbal Poule Stand',
+           'Baseball Poule Ranking',
+           null,
+           bepaal_volgende('pagina7'));
+    ris_pck_stand.toon_stand_poule('HB', to_char(v_n_jaar));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina8
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina8 is
+  
+  begin
+    header('Softbal Poule Stand',
+           'Softball Poule Ranking',
+           null,
+           bepaal_volgende('pagina8'));
+    ris_pck_stand.toon_stand_poule('SB', to_char(v_n_jaar));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina9
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina9 is
+  
+  begin
+    header('Mini Series Poule Stand',
+           'Mini Series Poule Ranking',
+           null,
+           bepaal_volgende('pagina9'));
+    ris_pck_stand.toon_stand_poule('MINI', to_char(v_n_jaar));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina10
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina10 is
+  
+  begin
+    header('Honkbal Eind Stand',
+           'Baseball Final Ranking',
+           null,
+           bepaal_volgende('pagina10'));
+    ris_pck_stand.toon_stand_final('HB', to_char(v_n_jaar));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina11
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina11 is
+  
+  begin
+    header('Softbal Eind Stand',
+           'Softball Final Ranking',
+           null,
+           bepaal_volgende('pagina11'));
+    ris_pck_stand.toon_stand_final('SB', to_char(v_n_jaar));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  --
+  -- pagina12
+  --
+  ----------------------------------------------------------------------------------------------------
+  procedure pagina12 is
+  
+  begin
+    header('Mini Series Eind Stand',
+           'Mini Series Final Ranking',
+           null,
+           bepaal_volgende('pagina12'));
+    ris_pck_stand.toon_stand_final('MINI', to_char(v_n_jaar));
+    footer;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  procedure wijzig_krant(p_jaar in varchar2) is
+  
+    v_n_teller number := 0;
+    v_n_aantal number := 0;
+  
+    cursor v_cur_krant is
+      select krt.* from ris_krant krt order by krt.volgorde;
+  
+    cursor v_cur_aantal_paginas is
+      select count(1) from ris_krant;
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    open v_cur_aantal_paginas;
+    fetch v_cur_aantal_paginas
+      into v_n_aantal;
+    close v_cur_aantal_paginas;
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Kabelkrant</font>');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function omhoog(v_volgnr) { ');
+    htp.p('    document.location.href="ris_pck_krant.doe_omhoog?p_s_volgnr="+v_volgnr+"&p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function omlaag(v_volgnr) { ');
+    htp.p('    document.location.href="ris_pck_krant.doe_omlaag?p_s_volgnr="+v_volgnr+"&p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function nietTonen(v_volgnr) { ');
+    htp.p('    document.location.href="ris_pck_krant.niet_tonen?p_s_volgnr="+v_volgnr+"&p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function tonen(v_volgnr) { ');
+    htp.p('    document.location.href="ris_pck_krant.tonen?p_s_volgnr="+v_volgnr+"&p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('</script>');
+    htp.p('<table class="infotable" cellspacing="0" cellpadding="0">');
+    htp.tablerowopen;
+    htp.tableheader('&nbsp;');
+    htp.tableheader('&nbsp;');
+    htp.tableheader('&nbsp;');
+    htp.tableheader('Tonen&nbsp;');
+    htp.tableheader('Pagina&nbsp;', cattributes => 'class="infoth"');
+    htp.tablerowclose;
+    for r_cur_krant in v_cur_krant loop
+      v_n_teller := v_n_teller + 1;
+      htp.tablerowopen;
+      htp.p('<td>' || r_cur_krant.volgorde || '.&nbsp;</td>');
+      if v_n_teller != 1 then
+        htp.p('<td align="center" valign="bottom" class="infotd"><a href="javascript:omhoog(' ||
+              r_cur_krant.volgnr || ')"><img alt="omhoog" border=0 src="' ||
+              ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'up.gif"></a>&nbsp;</td>');
+      else
+        htp.p('<td>&nbsp;</td>');
+      end if;
+      if v_n_teller != v_n_aantal then
+        htp.p('<td align="center" valign="top" class="infotd"><a href="javascript:omlaag(' ||
+              r_cur_krant.volgnr || ')"><img alt="omhoog" border=0 src="' ||
+              ris_pck_alg.geef_syspar('DIR_IMAGES') || 'dn.gif"></a></td>');
+      else
+        htp.p('<td>&nbsp;</td>');
+      end if;
+      htp.p('<td align=center class="infotd">');
+    
+      if r_cur_krant.tonen = 'J' then
+        htp.p('<input onClick="javascript:nietTonen(' ||
+              r_cur_krant.volgnr ||
+              ')" type="checkbox" checked value="J" name="p_tonen' ||
+              to_char(r_cur_krant.volgnr) || '">');
+      else
+        htp.p('<input onClick="javascript:tonen(' || r_cur_krant.volgnr ||
+              ')" type="checkbox" value="N" name="p_tonen' ||
+              to_char(r_cur_krant.volgnr) || '">');
+      end if;
+      htp.p('</td>');
+    
+      htp.tabledata(r_cur_krant.paginatitel || '&nbsp;&nbsp;',
+                    cattributes => 'class="infotd"');
+      htp.tablerowclose;
+    end loop;
+    htp.p('</table>');
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ----------------------------------------------------------------------------------------------------
+  procedure doe_omhoog(p_s_volgnr in varchar2, p_jaar in varchar2) is
+  
+    v_n_volgorde number;
+  
+    cursor v_cur_krant is
+      select krt.volgorde
+        from ris_krant krt
+       where krt.volgnr = to_number(p_s_volgnr);
+  
+  begin
+    open v_cur_krant;
+    fetch v_cur_krant
+      into v_n_volgorde;
+    close v_cur_krant;
+  
+    update ris_krant krt
+       set krt.volgorde = krt.volgorde + 1
+     where krt.volgorde = v_n_volgorde - 1;
+  
+    update ris_krant krt
+       set krt.volgorde = krt.volgorde - 1
+     where krt.volgnr = to_number(p_s_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_krant.wijzig_krant?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ----------------------------------------------------------------------------------------------------
+  procedure doe_omlaag(p_s_volgnr in varchar2, p_jaar in varchar2) is
+  
+    v_n_volgorde number;
+  
+    cursor v_cur_krant is
+      select krt.volgorde
+        from ris_krant krt
+       where krt.volgnr = to_number(p_s_volgnr);
+  
+  begin
+    open v_cur_krant;
+    fetch v_cur_krant
+      into v_n_volgorde;
+    close v_cur_krant;
+  
+    update ris_krant krt
+       set krt.volgorde = krt.volgorde - 1
+     where krt.volgorde = v_n_volgorde + 1;
+  
+    update ris_krant krt
+       set krt.volgorde = krt.volgorde + 1
+     where krt.volgnr = to_number(p_s_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_krant.wijzig_krant?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ----------------------------------------------------------------------------------------------------
+  procedure tonen(p_s_volgnr in varchar2, p_jaar in varchar2) is
+  
+  begin
+    update ris_krant krt
+       set krt.tonen = 'J'
+     where krt.volgnr = to_number(p_s_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_krant.wijzig_krant?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ----------------------------------------------------------------------------------------------------
+  procedure niet_tonen(p_s_volgnr in varchar2, p_jaar in varchar2) is
+  
+  begin
+    update ris_krant krt
+       set krt.tonen = 'N'
+     where krt.volgnr = to_number(p_s_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_krant.wijzig_krant?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ----------------------------------------------------------------------------------------------------
+end ris_pck_krant;

@@ -1,0 +1,2729 @@
+create or replace package body ris_pck_teams is
+
+  -- Function and procedure implementations
+  ------------------------------------------------------------------------------------
+  procedure startup is
+  
+  begin
+    htp.htmlopen;
+    htp.bodyopen;
+    htp.header(1, 'Teams');
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  -------------------------------------------------------------------------------------------
+  procedure teams_overzicht(p_taal in varchar2 default null,
+                            p_jaar in varchar2 default null,
+                            p_website in varchar2 default null) is
+  
+    v_s_soort ris_soort.afkorting%type := null;
+    v_s_stats_button varchar2(100) := null;
+    v_s_lineup_button varchar2(100) := null;
+    
+    cursor c_soort is
+      SELECT srt.afkorting, srt.titel_nl, srt.titel_en
+        FROM ris_soort srt, ris_soort_jaar sjr
+       WHERE srt.afkorting = sjr.afkorting
+         AND sjr.jaar = to_number(p_jaar)
+         AND srt.afkorting not in ('DEMOHB', 'DEMOSB')
+       ORDER BY srt.display_volgnr;
+  
+    cursor c_teams is
+      SELECT volgnr, naam, poule, soort, stats_htmlpagina
+        FROM ris_teams
+       where trim(soort) = v_s_soort
+         and jaar = to_number(p_jaar)
+       ORDER BY naam;
+  
+  begin
+    ris_pck_alg.header('false', p_jaar);
+    if p_website is null then
+      v_s_stats_button := 'stats.gif';
+      v_s_lineup_button := 'lineup.gif';
+    else
+      htp.p('<style>.infoth { background-color: #666666; }</style>');
+      v_s_stats_button := 'stats_web.gif';
+      v_s_lineup_button := 'lineup_web.gif';
+    end if;
+    htp.bodyopen;
+--    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+--          'l_s_bbs.jpg" align=absbottom><font size=6>&nbsp;&nbsp;Teams ' ||
+--          p_jaar || '</font>');
+    if p_website is null then
+      htp.p('<font size=5>');
+    else
+      htp.p('<font color="#FFFFFF" size=4>');
+    end if;
+    htp.p('Teams ' || p_jaar || '</font><br/><br/>');
+  
+    for r_soort in c_soort loop
+    
+      htp.p('<table cellspacing=0 cellpadding=0 width=500 class="noborder">');
+      htp.p('<tr>');
+      htp.p('<th class="infoth" width="500" height="35">&nbsp;' ||
+            r_soort.titel_nl || ' / ' || r_soort.titel_en || '</th>');
+      htp.p('</tr>');
+      htp.p('</table>');
+    
+      v_s_soort := r_soort.afkorting;
+    
+      if p_website is null then
+        htp.p('<table cellspacing=0 cellpadding=2 width=500 class="infotable">');
+      else
+        htp.p('<table cellspacing=0 cellpadding=2 width=500 class="website">');
+      end if;
+      
+      for r_teams in c_teams loop
+        htp.p('<tr>');
+        htp.p('<td width="400">');
+        if p_website is null then
+          htp.p('<font size=4>');
+        else
+          htp.p('<font color="#FFFFFF" size=4>');
+        end if;
+        htp.p( r_teams.naam ||
+              '</font></td>');
+        htp.p('<td><a href="ris_pck_teams.toon_lineup?p_team_volgnr=' ||
+              r_teams.volgnr || '&p_jaar=' || p_jaar ||
+              '"><img border=0 src="' ||
+              ris_pck_alg.geef_syspar('DIR_IMAGES') || v_s_lineup_button ||
+              '" align=absbottom></a></td>');
+        htp.p('<td><a href="/ris-doc/' || p_jaar || '/stats/' ||
+              r_soort.afkorting || '/' || r_teams.stats_htmlpagina ||
+              '"><img border=0 src="' ||
+              ris_pck_alg.geef_syspar('DIR_IMAGES') || v_s_stats_button || 
+              '" align=absbottom></a></td>');
+        htp.p('</tr>');
+      end loop;
+    
+      htp.p('</table>');
+      htp.br;
+    
+      htp.p('</td><td valign="TOP">');
+    end loop;
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure wijzig_teams(p_jaar in varchar2) is
+  
+    cursor c_teams is
+      select tem.volgnr,
+             tem.naam,
+             tem.poule,
+             tem.soort,
+             decode(tem.foto, null, '&nbsp;', 'ja') as foto,
+             tem.stats_htmlpagina,
+             tem.eindstand,
+             tem.poulestand,
+             tem.poulestand_offset,
+             count(dns.volgnr) as aantal_deelnemers
+        from ris_teams tem, ris_deelnemers dns
+       where tem.jaar = to_number(p_jaar)
+         and tem.volgnr = dns.tem_volgnr(+)
+       group by tem.volgnr,
+                tem.naam,
+                tem.poule,
+                tem.soort,
+                tem.foto,
+                tem.stats_htmlpagina,
+                tem.eindstand,
+                tem.poulestand,
+                tem.poulestand_offset
+       order by soort, poule, naam;
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Teams ' ||
+          p_jaar || '</font>');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function voegtoe() { ');
+    htp.p('    document.location.href="ris_pck_teams.voegtoe_team?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function verwijderTeam(v_s_team) { ');
+    htp.p('    if (confirm("Team verwijderen?\nAlle wedstrijden van dit team worden dan ook verwijderd!")) { ');
+    htp.p('      document.location.href="ris_pck_teams.doe_verwijder_team?p_team_volgnr="+v_s_team+"&p_jaar=' ||
+          p_jaar || '"; ');
+    htp.p('    } ');
+    htp.p('  } ');
+    htp.p('  function lineupTeam(v_s_team) { ');
+    htp.p('    document.location.href="ris_pck_teams.lineup?p_team_volgnr="+v_s_team+"&p_jaar=' ||
+          p_jaar || '"; ');
+    htp.p('  } ');
+    htp.p('</script>');
+    htp.p('<button onClick="javascript:voegtoe()">Toevoegen</button>');
+    htp.p('<table class="infotable" cellspacing="0" cellpadding="0">');
+    htp.tablerowopen;
+    htp.tableheader('&nbsp;Wijzig&nbsp;',
+                    cattributes => 'class="infoth" align="CENTER" width="30"');
+    htp.tableheader('Verwijder&nbsp;',
+                    cattributes => 'class="infoth" align="CENTER" width="30"');
+    htp.tableheader('Lineup&nbsp;',
+                    cattributes => 'class="infoth" align="CENTER" width="30"');
+    htp.tableheader('Soort&nbsp;', cattributes => 'class="infoth"');
+    htp.tableheader('Poule&nbsp;', cattributes => 'class="infoth"');
+    htp.tableheader('Teamnaam&nbsp;',
+                    cattributes => 'class="infoth" width="200"');
+    htp.tableheader('Foto&nbsp;', cattributes => 'class="infoth"');
+    htp.tableheader('# Deeln.&nbsp;', cattributes => 'class="infoth"');
+    htp.tableheader('Stats html&nbsp;', cattributes => 'class="infoth"');
+    htp.tableheader('Poulestand&nbsp;', cattributes => 'class="infoth"');
+    htp.tableheader('Eindstand&nbsp;', cattributes => 'class="infoth"');
+    htp.tablerowclose;
+    for r_teams in c_teams loop
+      htp.tablerowopen;
+      htp.p('<td align=center class="infotd"><a href="ris_pck_teams.doe_wijzig_teams?p_team_volgnr=' ||
+            to_char(r_teams.volgnr) || '&p_jaar=' || p_jaar ||
+            '"><img alt="wijzig team" border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'edit_icon.gif"></a></td>');
+      htp.p('<td align=center class="infotd"><a href="javascript:verwijderTeam(' ||
+            to_char(r_teams.volgnr) ||
+            ')"><img border=0 alt="Verwijder team" src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'delete_icon.gif"></a></td>');
+      htp.p('<td align=center class="infotd"><a href="javascript:lineupTeam(' ||
+            to_char(r_teams.volgnr) ||
+            ')"><img border=0 alt="Lineup team" src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'toonbericht.gif"></a></td>');
+    
+      htp.tabledata(r_teams.soort, cattributes => 'class="infotd"');
+      htp.tabledata(r_teams.poule, cattributes => 'class="infotd"');
+      htp.tabledata(r_teams.naam, cattributes => 'class="infotd"');
+      htp.tabledata(r_teams.foto,
+                    cattributes => 'class="infotd" align="center"');
+      htp.tabledata(to_char(r_teams.aantal_deelnemers),
+                    cattributes => 'class="infotd" align="center"');
+      htp.tabledata(r_teams.stats_htmlpagina,
+                    cattributes => 'class="infotd"');
+      htp.tabledata(r_teams.poulestand,
+                    cattributes => 'class="infotd" align="center"');
+      htp.tabledata(r_teams.eindstand,
+                    cattributes => 'class="infotd" align="center"');
+      htp.tablerowclose;
+    end loop;
+    htp.p('</table>');
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------  
+  procedure doe_wijzig_teams(p_team_volgnr in varchar2, p_jaar in varchar2) is
+  
+    v_s_tabledata varchar2(32000);
+  
+    cursor c_soort is
+      select srt.afkorting, srt.titel_nl, srt.titel_en
+        from ris_soort srt, ris_soort_jaar sjr
+       where srt.afkorting = sjr.afkorting
+         and sjr.jaar = to_number(p_jaar)
+       order by srt.display_volgnr;
+  
+    cursor c_team is
+      select tem.*
+        from ris_teams tem
+       where volgnr = to_number(p_team_volgnr)
+         and tem.jaar = to_number(p_jaar);
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Wijzigen team ' ||
+          p_jaar);
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function terugMenu() { ');
+    htp.p('    document.location.href="ris_pck_teams.wijzig_teams?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (document.f_team.p_naam.value == "") {
+                  alert("Teamnaam is verplicht!");
+                  controle = false;
+                }
+                if (document.f_team.p_soort.value == "0") {
+                  alert("Soort is verplicht!");
+                  controle = false;
+                }
+                
+                if(isNaN(document.f_team.p_poulestand.value)){
+                  alert("Poulestand moet numeriek zijn.");
+                  document.f_team.p_poulestand.focus();
+                  controle = false;
+                } 
+
+                if(isNaN(document.f_team.p_eindstand.value)){
+                  alert("Eindstand moet numeriek zijn.");
+                  document.f_team.p_eindstand.focus();
+                  controle = false;
+                } 
+
+                if(isNaN(document.f_team.p_poulestand_offset.value)){
+                  alert("Poulestand offset moet numeriek zijn. Voorbeeld: 0.1");
+                  document.f_team.p_poulestand_offset.focus();
+                  controle = false;
+                } 
+
+                if (controle) {
+                  document.f_team.submit();
+                }
+              } ');
+    htp.p('</script>');
+  
+    htp.formopen('ris_pck_teams.bewaar_wijzig_teams',
+                 'POST',
+                 cattributes => 'name="f_team"');
+    htp.formhidden('p_team_volgnr', p_team_volgnr);
+    htp.formhidden('p_jaar', p_jaar);
+  
+    htp.tableopen(cattributes => 'cellspacing=0');
+    for r_team in c_team loop
+      htp.tablerowopen;
+      htp.tableheader('<img src="' ||
+                      ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+                      'required.gif">&nbsp;&nbsp;Teamnaam&nbsp;',
+                      calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_naam', 50, 50, r_team.naam));
+      htp.tablerowclose;
+      htp.tablerowopen;
+      htp.tableheader('Soort&nbsp;', calign => 'RIGHT');
+      v_s_tabledata := '<select name="p_soort">';
+    
+      v_s_tabledata := v_s_tabledata || '<option value="0"></option>';
+    
+      for r_soort in c_soort loop
+        if trim(r_team.soort) = r_soort.afkorting then
+          v_s_tabledata := v_s_tabledata || '<option selected value="' ||
+                           r_soort.afkorting || '">' || r_soort.afkorting ||
+                           '</option>';
+        else
+          v_s_tabledata := v_s_tabledata || '<option value="' ||
+                           r_soort.afkorting || '">' || r_soort.afkorting ||
+                           '</option>';
+        end if;
+      end loop;
+    
+      v_s_tabledata := v_s_tabledata || '</select>';
+      htp.tabledata(v_s_tabledata);
+    
+      htp.tablerowclose;
+      htp.tablerowopen;
+      htp.tableheader('Poule&nbsp;', calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_poule', 10, 10, r_team.poule));
+      htp.tablerowclose;
+    
+      htp.tablerowopen;
+      htp.tableheader('Html Pagina Stats&nbsp;', calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_htmlstats',
+                                 50,
+                                 50,
+                                 r_team.stats_htmlpagina));
+      htp.tablerowclose;
+    
+      htp.tablerowopen;
+      htp.tableheader('Poulestand&nbsp;', calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_poulestand', 10, 10, r_team.poulestand));
+      htp.tablerowclose;
+    
+      htp.tablerowopen;
+      htp.tableheader('Poulestand Offset&nbsp;', calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_poulestand_offset',
+                                 5,
+                                 5,
+                                 r_team.poulestand_offset));
+      /*      if r_team.poulestand_offset = 0 then
+        htp.tabledata('<select name="p_poulestand_offset"><option selected value="0">Nee</option><option value="1">Ja</option></select>');
+      else
+        htp.tabledata('<select name="p_poulestand_offset"><option value="0">Nee</option><option selected value="1">Ja</option></select>');
+      end if; */
+      htp.tablerowclose;
+    
+      htp.tablerowopen;
+      htp.tableheader('Eindstand&nbsp;', calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_eindstand', 10, 10, r_team.eindstand));
+      htp.tablerowclose;
+    end loop;
+    htp.tableclose;
+    htp.br;
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    htp.formclose;
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure bewaar_wijzig_teams(p_team_volgnr       in varchar2,
+                                p_naam              in varchar2,
+                                p_soort             in varchar2,
+                                p_poule             in varchar2,
+                                p_htmlstats         in varchar2,
+                                p_poulestand        in varchar2,
+                                p_poulestand_offset in varchar2,
+                                p_eindstand         in varchar2,
+                                p_jaar              in varchar2) is
+  
+    v_s_soort             ris_teams.soort%type := null;
+    v_n_poulestand_offset number := 0;
+  
+  begin
+    if p_soort = '0' then
+      v_s_soort := null;
+    else
+      v_s_soort := p_soort;
+    end if;
+  
+    UPDATE ris_teams
+       set naam              = p_naam,
+           soort             = v_s_soort,
+           poule             = p_poule,
+           stats_htmlpagina  = p_htmlstats,
+           poulestand        = to_number(p_poulestand),
+           eindstand         = to_number(p_eindstand),
+           poulestand_offset = to_number(p_poulestand_offset)
+     where volgnr = to_number(p_team_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.wijzig_teams?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Wijzig Teams',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Teamnummer: ' || p_team_volgnr);
+      commit;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure voegtoe_team(p_jaar in varchar2) is
+  
+    v_s_tabledata varchar2(32000);
+  
+    cursor c_soort is
+      select srt.afkorting, srt.titel_nl, srt.titel_en
+        from ris_soort srt, ris_soort_jaar sjr
+       where sjr.afkorting = srt.afkorting
+         and sjr.jaar = to_number(p_jaar)
+       order by srt.display_volgnr;
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.bodyopen(cattributes => 'onLoad="javascript:document.f_team.p_naam.focus()"');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Voegtoe team ' ||
+          p_jaar);
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (document.f_team.p_naam.value == "") {
+                  alert("Teamnaam is verplicht!");
+                  controle = false;
+                }
+                if (document.f_team.p_soort.value == "0") {
+                  alert("Soort is verplicht!");
+                  controle = false;
+                }
+                if (controle) {
+                  document.forms[0].submit();
+                }
+              }
+               ');
+    htp.p('</script>');
+  
+    htp.formopen('ris_pck_teams.bewaar_voegtoe_teams',
+                 'POST',
+                 cattributes => 'name="f_team"');
+    htp.formHidden('p_jaar', p_jaar);
+  
+    htp.tableopen(cattributes => 'cellspacing=0');
+  
+    htp.tablerowopen;
+    htp.tableheader('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+                    'required.gif">&nbsp;&nbsp;' || 'Teamnaam&nbsp;',
+                    calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_naam', 50, 50));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Soort&nbsp;', calign => 'RIGHT');
+  
+    v_s_tabledata := '<select name="p_soort">';
+    v_s_tabledata := v_s_tabledata || '<option value="0"></option>';
+    for r_soort in c_soort loop
+      v_s_tabledata := v_s_tabledata || '<option value="' ||
+                       r_soort.afkorting || '">' || r_soort.afkorting ||
+                       '</option>';
+    end loop;
+    v_s_tabledata := v_s_tabledata || '</select>';
+    htp.tabledata(v_s_tabledata);
+  
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Poule&nbsp;', calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_poule', 10, 10));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Html Pagina Stats&nbsp;', calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_htmlstats', 50, 100));
+    htp.tablerowclose;
+  
+    htp.tableclose;
+    htp.formclose;
+  
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure bewaar_voegtoe_teams(p_naam      in varchar2,
+                                 p_soort     in varchar2,
+                                 p_poule     in varchar2,
+                                 p_htmlstats in varchar2,
+                                 p_jaar      in varchar2) is
+  
+    v_s_soort varchar2(10);
+  
+  begin
+    if p_soort = '0' then
+      v_s_soort := null;
+    else
+      v_s_soort := p_soort;
+    end if;
+  
+    insert into ris_teams
+      (volgnr, naam, soort, poule, stats_htmlpagina, jaar)
+    values
+      (tem_seq.nextval,
+       p_naam,
+       v_s_soort,
+       p_poule,
+       p_htmlstats,
+       to_number(p_jaar));
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.wijzig_teams?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Voegtoe Teams',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Teamnaam: ' || p_naam);
+    
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_verwijder_team(p_team_volgnr in varchar2,
+                               p_jaar        in varchar2) is
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    DELETE FROM ris_wedstrijden_finale fne
+     WHERE fne.thuis_nr = to_number(p_team_volgnr)
+        OR fne.uit_nr = to_number(p_team_volgnr);
+  
+    DELETE FROM ris_wedstrijden_poule ple
+     WHERE ple.team_volgnr = to_number(p_team_volgnr)
+        OR ple.team2_volgnr = to_number(p_team_volgnr);
+  
+    DELETE FROM ris_teams WHERE volgnr = to_number(p_team_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.wijzig_teams?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Verwijderen Teams',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Teamnummer: ' || p_team_volgnr);
+    
+  end;
+  ------------------------------------------------------------------------------------
+  procedure wedstrijden_overzicht(p_team_volgnr in varchar2,
+                                  p_jaar        in varchar2) is
+  
+    --######################################################################
+    --# Parameters:
+    --# p_team_volgnr = 1      - Number of the team
+    --# p_team_volgnr = HB     - All Baseball games incl. DEMOHB
+    --# p_team_volgnr = SB     - All Softball games incl. DEMOSB
+    --# p_team_volgnr = DEMOSB - All Softball Demo Games
+    --# p_team_volgnr = DEMOHB - All Baseball Demo Games
+    --# p_team_volgnr = MINI   - All Mini games
+    --# p_team_volgnr = ALL    - All games
+    --######################################################################
+  
+    type ref_cursor is REF CURSOR;
+  
+    v_s_titel              varchar2(100) := null;
+    v_s_teamnaam           ris_teams.naam%type;
+    v_cur_wedstrijden      ref_cursor;
+    v_s_cur_string         varchar2(4000);
+    v_s_opmerking          ris_wedstrijden_poule.opmerking%type;
+    v_s_sortering          varchar2(1000) := null;
+    v_n_aantal_wedstrijden number := 0;
+    i                      number(12, 2);
+    j                      number(12, 2);
+    k                      number(12, 2);
+    v_s_soort              ris_teams.soort%type := null;
+    r_v_wedstrijden        ris_v_wedstrijden%rowtype := null;
+  
+    cursor c_teams is
+      SELECT naam, poule, soort
+        FROM ris_teams
+       WHERE volgnr = to_number(p_team_volgnr)
+         and jaar = to_number(p_jaar);
+  
+    cursor c_soort is
+      select srt.afkorting, srt.titel_nl, srt.titel_en
+        from ris_soort srt, ris_soort_jaar sjr
+       where sjr.jaar = to_number(p_jaar)
+         and sjr.afkorting = srt.afkorting
+       order by srt.display_volgnr;
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+
+    if p_team_volgnr = 'ALL' then
+      v_s_titel := 'Alle Wedstrijden ' || p_jaar;
+    else
+      v_s_titel := 'Wedstrijden ' || p_team_volgnr || ' ' || p_jaar;
+      v_s_soort := p_team_volgnr;
+    end if;
+  
+    htp.bodyopen;
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;' ||
+          v_s_titel);
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('   function voegtoe() { ');
+    htp.p('     document.location.href="ris_pck_teams.wedstrijd_toevoegen?p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '"; ');
+    htp.p('   }');
+  
+    htp.p('   function verwijder_wedstrijd(v_wed_nr) { ');
+    htp.p('     if (confirm("Wedstrijd verwijderen?\n")) { ');
+    htp.p('       document.location.href="ris_pck_teams.verwijder_wedstrijd?p_wed_volgnr="+v_wed_nr+"&p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '"; ');
+    htp.p('     } ');
+    htp.p('   } ');
+  
+    htp.p('</script>');
+  
+    htp.p('<font size="-3">');
+    htp.p('<br>');
+    htp.p('<button onClick="javascript:voegtoe()">Toevoegen</button>');
+    htp.p('<br>');
+    htp.p('<table align=left cellspacing=0 class="wedstrijd" border="1">');
+    htp.p('<tr class="wedstrth">');
+  
+    htp.p('<th>Wijzig&nbsp;</th>');
+    htp.p('<th>Verwijder&nbsp;</th>');
+  
+    -- Sortering 1
+    if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') = 'soort' then
+      htp.p('<th>Soort&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') = 'poule' then
+      htp.p('<th>Poule&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') = 'datum' then
+      htp.p('<th>Datum&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') =
+          'tijdstip' then
+      htp.p('<th>Tijd&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') =
+          'wedstrijd_nummer' then
+      htp.p('<th>Nr.&nbsp;</th>');
+    end if;
+  
+    -- Sortering 2
+    if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') = 'soort' then
+      htp.p('<th>Soort&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') = 'poule' then
+      htp.p('<th>Poule&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') = 'datum' then
+      htp.p('<th>Datum&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') =
+          'tijdstip' then
+      htp.p('<th>Tijd&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') =
+          'wedstrijd_nummer' then
+      htp.p('<th>Nr.&nbsp;</th>');
+    end if;
+  
+    -- Sortering 3
+    if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') = 'soort' then
+      htp.p('<th>Soort&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') = 'poule' then
+      htp.p('<th>Poule&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') = 'datum' then
+      htp.p('<th>Datum&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') =
+          'tijdstip' then
+      htp.p('<th>Tijd&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') =
+          'wedstrijd_nummer' then
+      htp.p('<th>Nr.&nbsp;</th>');
+    end if;
+  
+    -- Sortering 4
+    if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') = 'soort' then
+      htp.p('<th>Soort&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') = 'poule' then
+      htp.p('<th>Poule&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') = 'datum' then
+      htp.p('<th>Datum&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') =
+          'tijdstip' then
+      htp.p('<th>Tijd&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') =
+          'wedstrijd_nummer' then
+      htp.p('<th>Nr.&nbsp;</th>');
+    end if;
+  
+    -- Sortering 5
+    if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') = 'soort' then
+      htp.p('<th>Soort&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') = 'poule' then
+      htp.p('<th>Poule&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') = 'datum' then
+      htp.p('<th>Datum&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') =
+          'tijdstip' then
+      htp.p('<th>Tijd&nbsp;</th>');
+    elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') =
+          'wedstrijd_nummer' then
+      htp.p('<th>Nr.&nbsp;</th>');
+    end if;
+  
+    htp.p('<th>Thuis&nbsp;</th>');
+    htp.p('<th>Uit&nbsp;</th>');
+    htp.p('<th>Uitslag&nbsp;</th>');
+    htp.p('<th>Opmerking&nbsp;</th>');
+    htp.p('</tr>');
+  
+    --#####################################################################################################
+    --# Query voor het ophalen van de teamwedstrijden                                                     #
+    --#####################################################################################################
+    v_s_sortering := ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') || ',' ||
+                     ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') || ',' ||
+                     ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') || ',' ||
+                     ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') || ',' ||
+                     ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5');
+  
+    if p_team_volgnr = 'ALL' then
+      v_s_cur_string := 'SELECT * FROM RIS_V_WEDSTRIJDEN where jaar = ' ||
+                        p_jaar || ' order by ' || v_s_sortering;
+    else
+      if v_s_soort = 'SB' then
+        v_s_cur_string := 'SELECT * FROM RIS_V_WEDSTRIJDEN WHERE jaar = ' ||
+                          p_jaar || ' and SOORT in (' || '''' || 'SB' || '''' || ',' || '''' ||
+                          'DEMOSB' || '''' || ') order by ' ||
+                          v_s_sortering;
+      else
+        if v_s_soort = 'HB' then
+          v_s_cur_string := 'SELECT * FROM RIS_V_WEDSTRIJDEN WHERE jaar = ' ||
+                            p_jaar || ' and SOORT in (' || '''' || 'HB' || '''' || ',' || '''' ||
+                            'DEMOHB' || '''' || ') order by ' ||
+                            v_s_sortering;
+        else
+          v_s_cur_string := 'SELECT * FROM RIS_V_WEDSTRIJDEN WHERE jaar = ' ||
+                            p_jaar || ' and SOORT = ' || '''' || v_s_soort || '''' ||
+                            ' order by ' || v_s_sortering;
+        end if;
+      end if;
+    end if;
+  
+    v_n_aantal_wedstrijden := 0;
+    
+    open v_cur_wedstrijden for v_s_cur_string;
+    loop
+      fetch v_cur_wedstrijden
+        into r_v_wedstrijden;
+      exit when v_cur_wedstrijden%notfound;
+      v_n_aantal_wedstrijden := v_n_aantal_wedstrijden + 1;
+    
+      i := v_n_aantal_wedstrijden;
+      j := i / 2;
+      k := round(j);
+      if (j = k) then
+        htp.p('<tr class="even">');
+      else
+        htp.p('<tr>');
+      end if;
+    
+      if (r_v_wedstrijden.soort in ('DEMOHB', 'DEMOSB') AND
+         v_s_soort not in ('DEMOHB', 'DEMOSB')) then
+        htp.p('<td valign="TOP" align=center>&nbsp;</td>');
+        htp.p('<td valign="TOP" align=center>&nbsp;</td>');
+      else
+        htp.p('<td valign="TOP" align=center><a href="ris_pck_teams.wedstrijd_wijzig?p_wed_volgnr=' ||
+              to_char(r_v_wedstrijden.volgnr) || '&p_team_volgnr=' ||
+              p_team_volgnr || '&p_type_wedstrijd=' ||
+              r_v_wedstrijden.type_wedstrijd || '&p_jaar=' || p_jaar ||
+              '"><img border=0 alt="Wijzig wedstrijd" src="' ||
+              ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'edit_icon.gif"></a></td>');
+        htp.p('<td valign="TOP" align=center><a href="ris_pck_teams.wedstrijd_verwijder?p_wed_volgnr=' ||
+              to_char(r_v_wedstrijden.volgnr) || '&p_team_volgnr=' ||
+              p_team_volgnr || '&p_type_wedstrijd=' ||
+              r_v_wedstrijden.type_wedstrijd || '&p_jaar=' || p_jaar ||
+              '"><img border=0 alt="Verwijder wedstrijd" src="' ||
+              ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'delete_icon.gif"></a></td>');
+      end if;
+
+      -- Sortering 1
+      if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') = 'soort' then
+        toon_soort(r_v_wedstrijden.soort);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') =
+            'poule' then
+        toon_poule(r_v_wedstrijden.poule);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') =
+            'datum' then
+        toon_datum(r_v_wedstrijden.datum);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') =
+            'tijdstip' then
+        toon_tijdstip(r_v_wedstrijden.tijdstip);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER1') =
+            'wedstrijd_nummer' then
+        toon_nummer(r_v_wedstrijden.wedstrijd_nummer);
+      end if;
+    
+      -- Sortering 2
+      if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') = 'soort' then
+        toon_soort(r_v_wedstrijden.soort);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') =
+            'poule' then
+        toon_poule(r_v_wedstrijden.poule);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') =
+            'datum' then
+        toon_datum(r_v_wedstrijden.datum);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') =
+            'tijdstip' then
+        toon_tijdstip(r_v_wedstrijden.tijdstip);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER2') =
+            'wedstrijd_nummer' then
+        toon_nummer(r_v_wedstrijden.wedstrijd_nummer);
+      end if;
+    
+      -- Sortering 3
+      if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') = 'soort' then
+        toon_soort(r_v_wedstrijden.soort);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') =
+            'poule' then
+        toon_poule(r_v_wedstrijden.poule);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') =
+            'datum' then
+        toon_datum(r_v_wedstrijden.datum);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') =
+            'tijdstip' then
+        toon_tijdstip(r_v_wedstrijden.tijdstip);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER3') =
+            'wedstrijd_nummer' then
+        toon_nummer(r_v_wedstrijden.wedstrijd_nummer);
+      end if;
+    
+      -- Sortering 4
+      if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') = 'soort' then
+        toon_soort(r_v_wedstrijden.soort);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') =
+            'poule' then
+        toon_poule(r_v_wedstrijden.poule);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') =
+            'datum' then
+        toon_datum(r_v_wedstrijden.datum);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') =
+            'tijdstip' then
+        toon_tijdstip(r_v_wedstrijden.tijdstip);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER4') =
+            'wedstrijd_nummer' then
+        toon_nummer(r_v_wedstrijden.wedstrijd_nummer);
+      end if;
+    
+      -- Sortering 5
+      if ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') = 'soort' then
+        toon_soort(r_v_wedstrijden.soort);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') =
+            'poule' then
+        toon_poule(r_v_wedstrijden.poule);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') =
+            'datum' then
+        toon_datum(r_v_wedstrijden.datum);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') =
+            'tijdstip' then
+        toon_tijdstip(r_v_wedstrijden.tijdstip);
+      elsif ris_pck_alg.geef_syspar('WEDSTRIJD_SORTERING_BEHEER5') =
+            'wedstrijd_nummer' then
+        toon_nummer(r_v_wedstrijden.wedstrijd_nummer);
+      end if;
+    
+      htp.p('<td valign="TOP">' || r_v_wedstrijden.display_thuis ||
+            '</td>');
+      htp.p('<td valign="TOP">' || r_v_wedstrijden.display_uit || '</td>');
+    
+      htp.p('<td valign="TOP">' || r_v_wedstrijden.punten_voor || ' - ' ||
+            r_v_wedstrijden.punten_tegen || '</td>');
+    
+      if r_v_wedstrijden.opmerking is null then
+        htp.p('<td valign="TOP">&nbsp;</td>');
+      else
+        htp.p('<td valign="TOP">' || r_v_wedstrijden.opmerking || '</td>');
+      end if;
+      htp.p('</tr>');
+ 
+    end loop;
+    close v_cur_wedstrijden;
+
+    htp.p('</table>');
+    htp.p('</font>');
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure toon_soort(p_s_soort in varchar2) is
+  
+  begin
+    if p_s_soort is null then
+      htp.p('<td valign="TOP">&nbsp;</td>');
+    else
+      htp.p('<td valign="TOP">' || p_s_soort || '</td>');
+    end if;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure toon_poule(p_s_poule in varchar2) is
+  
+  begin
+    if p_s_poule is null then
+      htp.p('<td valign="TOP">&nbsp;</td>');
+    else
+      htp.p('<td valign="TOP">' || p_s_poule || '</td>');
+    end if;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure toon_nummer(p_s_nummer in varchar2) is
+  
+  begin
+    if p_s_nummer is null then
+      htp.p('<td valign="TOP">&nbsp;</td>');
+    else
+      htp.p('<td valign="TOP" nowrap>' || p_s_nummer || '</td>');
+    end if;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure toon_datum(p_d_datum in date) is
+  
+  begin
+    htp.p('<td valign="TOP" nowrap>' || to_char(p_d_datum, 'DD-MM-YYYY') ||
+          '</td>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure toon_tijdstip(p_s_tijdstip in varchar2) is
+  
+  begin
+    if p_s_tijdstip is null then
+      htp.p('<td valign="TOP">&nbsp;</td>');
+    else
+      htp.p('<td valign="TOP">' || p_s_tijdstip || '</td>');
+    end if;
+  end;
+  ------------------------------------------------------------------------------------  
+  procedure wedstrijd_wijzig(p_wed_volgnr     in varchar2,
+                             p_team_volgnr    in varchar2,
+                             p_type_wedstrijd in varchar2,
+                             p_jaar           in varchar2) is
+  
+    type ref_cursor is REF CURSOR;
+  
+    v_n_wed_volgnr       number := null;
+    v_b_wijzigbeheer_mag boolean := false;
+    v_c_wedstrijden      ref_cursor;
+    v_r_wedstrijd        ris_v_wedstrijden%rowtype := null;
+    v_s_cur_string       varchar2(2000) := null;
+  
+  begin
+    v_b_wijzigbeheer_mag := true;
+    if p_type_wedstrijd = 'Poule' then
+      v_s_cur_string := 'select wed.* from ris_v_wedstrijden wed where wed.jaar = ' ||
+                        p_jaar || ' and wed.type_wedstrijd = ' || '''' ||
+                        'Poule' || '''' || ' and wed.volgnr = ' ||
+                        p_wed_volgnr;
+    elsif p_type_wedstrijd = 'Kruis' then
+      v_s_cur_string := 'select wed.* from ris_v_wedstrijden wed where wed.jaar = ' ||
+                        p_jaar || ' and wed.type_wedstrijd = ' || '''' ||
+                        'Kruis' || '''' || ' and wed.volgnr = ' ||
+                        p_wed_volgnr;
+    elsif p_type_wedstrijd = 'Finale' then
+      v_s_cur_string := 'select wed.* from ris_v_wedstrijden wed where wed.jaar = ' ||
+                        p_jaar || ' and wed.type_wedstrijd = ' || '''' ||
+                        'Finale' || '''' || ' and wed.volgnr = ' ||
+                        p_wed_volgnr;
+    elsif p_type_wedstrijd = 'Mix' then
+      v_s_cur_string := 'select wed.* from ris_v_wedstrijden wed where wed.jaar = ' ||
+                        p_jaar || ' and wed.type_wedstrijd = ' || '''' ||
+                        'Mix' || '''' || ' and wed.volgnr = ' ||
+                        p_wed_volgnr;
+    elsif p_type_wedstrijd = 'Demo' then
+      v_s_cur_string := 'select wed.* from ris_v_wedstrijden wed where wed.jaar = ' ||
+                        p_jaar || ' and wed.type_wedstrijd = ' || '''' ||
+                        'Demo' || '''' || ' and wed.volgnr = ' ||
+                        p_wed_volgnr;
+    end if;
+  
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Wijzig Wedstrijd ' ||
+          p_jaar);
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>
+              function bewaar() {
+                var controle = true;
+
+                if (document.wijzig_wedstrijd.p_datum.value == "") {
+                  alert("Datum is verplicht");
+                  document.wijzig_wedstrijd.p_datum.focus();
+                  controle = false;
+                }
+                
+                if(isNaN(document.wijzig_wedstrijd.p_wedstrijd_nummer.value)){
+                  alert("Wedstrijdnummer moet numeriek zijn.");
+                  document.wijzig_wedstrijd.p_wedstrijd_nummer.focus();
+                  controle = false;
+                } 
+                
+                if (controle) {
+                  document.wijzig_wedstrijd.submit();
+                }
+              }
+            </script>');
+  
+    htp.p('<form name="wijzig_wedstrijd" action="ris_pck_teams.doe_wijzig_wedstrijd" method="POST">');
+    htp.p('<input type=hidden name="p_wed_volgnr" value="' || p_wed_volgnr || '">');
+    htp.p('<input type=hidden name="p_team_volgnr" value="' ||
+          p_team_volgnr || '">');
+    htp.formHidden('p_jaar', p_jaar);
+  
+    htp.p('<table align=left cellspacing=0>');
+  
+    open v_c_wedstrijden for v_s_cur_string;
+    loop
+      fetch v_c_wedstrijden
+        into v_r_wedstrijd;
+      exit when v_c_wedstrijden%notfound;
+      htp.p('<input type=hidden name="p_type_wedstrijd" value="' ||
+            v_r_wedstrijd.type_wedstrijd || '">');
+    
+      v_n_wed_volgnr := v_r_wedstrijd.volgnr;
+    
+      htp.p('<tr>');
+      htp.p('<th align="RIGHT" nowrap><img src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'required.gif">&nbsp;&nbsp;Datum (dd-mm-yyyy)&nbsp;</th>');
+      if v_b_wijzigbeheer_mag then
+        htp.p('<td><input name="p_datum" type=text value=' ||
+              to_char(v_r_wedstrijd.datum, 'DD-MM-YYYY') ||
+              ' size=10 maxlength=10></td>');
+      else
+        htp.p('<td>' ||
+              htf.formhidden('p_datum',
+                             to_char(v_r_wedstrijd.datum, 'DD-MM-YYYY')) ||
+              to_char(v_r_wedstrijd.datum, 'DD-MM-YYYY') || '</td>');
+      end if;
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT" nowrap>Tijdstip (uu.mi)&nbsp;</th>');
+      if v_b_wijzigbeheer_mag then
+        htp.p('<td><input name="p_tijdstip" type=text value="' ||
+              v_r_wedstrijd.tijdstip || '" size=6 maxlength=5></td>');
+      else
+        htp.p('<td>' ||
+              htf.formhidden('p_tijdstip', v_r_wedstrijd.tijdstip) ||
+              v_r_wedstrijd.tijdstip || '</td>');
+      end if;
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Wedstrijdnummer&nbsp;</th>');
+      if v_b_wijzigbeheer_mag then
+        htp.p('<td><input name="p_wedstrijd_nummer" type=text value="' ||
+              v_r_wedstrijd.wedstrijd_nummer ||
+              '" size=10 maxlength=10></td>');
+      else
+        htp.p('<td>' ||
+              htf.formhidden('p_wedstrijd_nummer',
+                             v_r_wedstrijd.wedstrijd_nummer) ||
+              v_r_wedstrijd.wedstrijd_nummer || '</td>');
+      end if;
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Soort&nbsp;</th>');
+      htp.p('<td>' || v_r_wedstrijd.soort ||
+            htf.formhidden('p_soort', v_r_wedstrijd.soort) || '</td>');
+    
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Wedstrijd&nbsp;</th>');
+      htp.p('<td><table class="noborder"><tr><td>' ||
+            v_r_wedstrijd.display_thuis || '</td><td> - </td><td>' ||
+            v_r_wedstrijd.display_uit || '</td></tr></table></td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Uitslag&nbsp;</th>');
+      htp.p('<td><input name="p_punten_voor" type=text value="' ||
+            v_r_wedstrijd.punten_voor ||
+            '" size=5 maxlength=5> - Tegenstander:<input name="p_punten_tegen" type=text value="' ||
+            v_r_wedstrijd.punten_tegen || '" size=5 maxlength=5></td>');
+      htp.p('</tr><tr>');
+    
+      htp.p('<th align="RIGHT">Scheidsrechters&nbsp;</th>');
+      if v_b_wijzigbeheer_mag then
+        htp.p('<td><input name="p_scheidsrechters" type=text value="' ||
+              v_r_wedstrijd.scheidsrechters ||
+              '" size=50 maxlength=100></td>');
+      else
+        htp.p('<td>' ||
+              htf.formhidden('p_scheidsrechters',
+                             v_r_wedstrijd.scheidsrechters) ||
+              v_r_wedstrijd.scheidsrechters || '</td>');
+      end if;
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Opmerking&nbsp;</th>');
+      if v_b_wijzigbeheer_mag then
+        htp.p('<td><input name="p_opmerking" type=text value="' ||
+              v_r_wedstrijd.opmerking || '" size=50 maxlength=100></td>');
+      else
+        htp.p('<td>' ||
+              htf.formhidden('p_opmerking', v_r_wedstrijd.opmerking) ||
+              v_r_wedstrijd.opmerking || '</td>');
+      end if;
+      htp.p('</tr>');
+    end loop;
+  
+    htp.p('<tr><td colspan="2"><button onClick="javascript:bewaar()">Bewaar</button></td></tr>');
+    htp.p('</table>');
+  
+    htp.p('</form>');
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_wijzig_wedstrijd(p_wed_volgnr       in varchar2,
+                                 p_team_volgnr      in varchar2,
+                                 p_datum            in varchar2,
+                                 p_tijdstip         in varchar2,
+                                 p_wedstrijd_nummer in varchar2,
+                                 p_soort            in varchar2,
+                                 p_punten_voor      in varchar2,
+                                 p_punten_tegen     in varchar2,
+                                 p_scheidsrechters  in varchar2,
+                                 p_opmerking        in varchar2,
+                                 p_type_wedstrijd   in varchar2,
+                                 p_jaar             in varchar2) is
+  
+  begin
+    if p_type_wedstrijd = 'Poule' then
+      UPDATE ris_wedstrijden_poule
+         SET datum            = trunc(to_date(p_datum, 'DD-MM-YYYY')),
+             tijdstip         = p_tijdstip,
+             soort            = p_soort,
+             opmerking        = p_opmerking,
+             scheidsrechters  = decode(trim(p_scheidsrechters),
+                                       '',
+                                       null,
+                                       p_scheidsrechters),
+             wedstrijd_nummer = decode(trim(p_wedstrijd_nummer),
+                                       '',
+                                       null,
+                                       p_wedstrijd_nummer),
+             punten_voor      = to_number(p_punten_voor),
+             punten_tegen     = to_number(p_punten_tegen),
+             jaar             = to_number(p_jaar)
+       WHERE volgnr = to_number(p_wed_volgnr);
+    elsif p_type_wedstrijd = 'Finale' then
+      UPDATE ris_wedstrijden_finale
+         SET datum            = to_date(p_datum, 'DD-MM-YYYY'),
+             tijdstip         = p_tijdstip,
+             soort            = p_soort,
+             opmerking        = p_opmerking,
+             scheidsrechters  = decode(trim(p_scheidsrechters),
+                                       '',
+                                       null,
+                                       p_scheidsrechters),
+             wedstrijd_nummer = decode(trim(p_wedstrijd_nummer),
+                                       '',
+                                       null,
+                                       p_wedstrijd_nummer),
+             punten_voor      = to_number(p_punten_voor),
+             punten_tegen     = to_number(p_punten_tegen),
+             jaar             = to_number(p_jaar)
+       WHERE volgnr = to_number(p_wed_volgnr);
+    elsif p_type_wedstrijd = 'Kruis' then
+      UPDATE ris_wedstrijden_kruis
+         SET datum            = to_date(p_datum, 'DD-MM-YYYY'),
+             tijdstip         = p_tijdstip,
+             soort            = p_soort,
+             opmerking        = p_opmerking,
+             scheidsrechters  = decode(trim(p_scheidsrechters),
+                                       '',
+                                       null,
+                                       p_scheidsrechters),
+             wedstrijd_nummer = decode(trim(p_wedstrijd_nummer),
+                                       '',
+                                       null,
+                                       p_wedstrijd_nummer),
+             punten_voor      = to_number(p_punten_voor),
+             punten_tegen     = to_number(p_punten_tegen),
+             jaar             = to_number(p_jaar)
+       WHERE volgnr = to_number(p_wed_volgnr);
+    elsif p_type_wedstrijd = 'Mix' then
+      UPDATE ris_wedstrijden_mix
+         SET datum            = to_date(p_datum, 'DD-MM-YYYY'),
+             tijdstip         = p_tijdstip,
+             soort            = p_soort,
+             opmerking        = p_opmerking,
+             scheidsrechters  = decode(trim(p_scheidsrechters),
+                                       '',
+                                       null,
+                                       p_scheidsrechters),
+             wedstrijd_nummer = decode(trim(p_wedstrijd_nummer),
+                                       '',
+                                       null,
+                                       p_wedstrijd_nummer),
+             punten_voor      = to_number(p_punten_voor),
+             punten_tegen     = to_number(p_punten_tegen),
+             jaar             = to_number(p_jaar)
+       WHERE volgnr = to_number(p_wed_volgnr);
+    elsif p_type_wedstrijd = 'Demo' then
+      UPDATE ris_wedstrijden_demo dmo
+         SET datum            = to_date(p_datum, 'DD-MM-YYYY'),
+             tijdstip         = p_tijdstip,
+             soort            = p_soort,
+             opmerking        = p_opmerking,
+             scheidsrechters  = decode(trim(p_scheidsrechters),
+                                       '',
+                                       null,
+                                       p_scheidsrechters),
+             wedstrijd_nummer = decode(trim(p_wedstrijd_nummer),
+                                       '',
+                                       null,
+                                       p_wedstrijd_nummer),
+             punten_voor      = to_number(p_punten_voor),
+             punten_tegen     = to_number(p_punten_tegen),
+             jaar             = to_number(p_jaar)
+       WHERE volgnr = to_number(p_wed_volgnr);
+    end if;
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Wijzigen Wedstrijd',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Type:' || p_type_wedstrijd ||
+                                  ' Wedstrijdnummer: ' || p_wed_volgnr);
+  end;
+  ------------------------------------------------------------------------------------
+  procedure wedstrijd_toevoegen(p_team_volgnr      in varchar2,
+                                p_datum            in varchar2 default null,
+                                p_tijdstip         in varchar2 default null,
+                                p_soort            in varchar2 default null,
+                                p_wedstrijd_nummer in varchar2 default null,
+                                p_type_wedstrijd   in varchar2 default 'Poule',
+                                p_type_thuis       in varchar2 default 'Kruis',
+                                p_type_uit         in varchar2 default 'Finale',
+                                p_opmerking        in varchar2 default null,
+                                p_scheidsrechters  in varchar2 default null,
+                                p_jaar             in varchar2 default null) is
+  
+    type ref_cursor is REF CURSOR;
+  
+    v_s_teamnaam     varchar2(100);
+    v_cur_teams      ref_cursor;
+    v_s_cur_string   varchar2(4000);
+    v_n_volgnr       number(11);
+    v_s_team         varchar2(100);
+    v_s_soort        varchar2(100);
+    v_type_wedstrijd varchar2(100);
+  
+    cursor c_soort is
+      select srt.afkorting, srt.titel_nl, srt.titel_en
+        from ris_soort srt, ris_soort_jaar sjr
+       where sjr.jaar = to_number(p_jaar)
+         and sjr.afkorting = srt.afkorting
+       order by srt.display_volgnr;
+  
+    cursor c_team_keuze is
+      SELECT tem.naam || ' ' || tem.soort teamnaam, tem.soort
+        FROM ris_teams tem
+       WHERE tem.volgnr = to_number(p_team_volgnr)
+         AND tem.jaar = to_number(p_jaar)
+       ORDER BY tem.soort, tem.volgnr;
+  
+  begin
+    if p_team_volgnr in ('DEMOHB', 'DEMOSB') then
+      v_type_wedstrijd := 'Demo';
+    else
+      v_type_wedstrijd := p_type_wedstrijd;
+    end if;
+  
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body onLoad="document.toevoegen_wedstrijd.p_datum.focus()">');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Toevoegen Wedstrijd ' ||
+          p_jaar);
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>
+              function wijzigVelden() {
+                document.location.href="ris_pck_teams.wedstrijd_toevoegen"
+                                      +"?p_team_volgnr="
+                                      +document.toevoegen_wedstrijd.p_team_volgnr.value
+                                      +"&p_datum="
+                                      +document.toevoegen_wedstrijd.p_datum.value
+                                      +"&p_tijdstip="
+                                      +document.toevoegen_wedstrijd.p_tijdstip.value
+                                      +"&p_soort="
+                                      +document.toevoegen_wedstrijd.p_soort.value
+                                      +"&p_wedstrijd_nummer="
+                                      +document.toevoegen_wedstrijd.p_wedstrijd_nummer.value
+                                      +"&p_type_wedstrijd="
+                                      +document.toevoegen_wedstrijd.p_type_wedstrijd.value
+                                      +"&p_type_thuis="
+                                      +document.toevoegen_wedstrijd.p_type_thuis.value
+                                      +"&p_type_uit="
+                                      +document.toevoegen_wedstrijd.p_type_uit.value
+                                      +"&p_opmerking="
+                                      +document.toevoegen_wedstrijd.p_opmerking.value
+                                      +"&p_scheidsrechters="
+                                      +document.toevoegen_wedstrijd.p_scheidsrechters.value
+                                      +"&p_jaar=' || p_jaar || '";
+              }
+
+              function bewaar() {
+                var controle = true;
+
+                if (document.toevoegen_wedstrijd.p_team.value == "") {
+                  alert("Team is verplicht!");
+                  document.toevoegen_wedstrijd.p_team.focus();
+                  controle = false;
+                }
+                if (document.toevoegen_wedstrijd.p_team2.value == "") {
+                  alert("Team is verplicht!");
+                  document.toevoegen_wedstrijd.p_team2.focus();
+                  controle = false;
+                }
+                if (document.toevoegen_wedstrijd.p_datum.value == "") {
+                  alert("Datum is verplicht");
+                  document.toevoegen_wedstrijd.p_datum.focus();
+                  controle = false;
+                }
+                if (document.toevoegen_wedstrijd.p_soort.value == "") {
+                  alert("Soort is verplicht");
+                  document.toevoegen_wedstrijd.p_soort.focus();
+                  controle = false;
+                }
+                if (isNaN(document.toevoegen_wedstrijd.p_wedstrijd_nummer.value)){
+                  alert("Wedstrijdnummer moet numeriek zijn.");
+                  document.toevoegen_wedstrijd.p_wedstrijd_nummer.focus();
+                  controle = false;
+                }
+                
+                if (controle) {
+                  document.toevoegen_wedstrijd.submit();
+                }
+              }
+            </script>');
+  
+    if p_team_volgnr = 'ALL' then
+      v_s_cur_string := 'SELECT tem.volgnr, tem.naam, tem.soort FROM ris_teams tem WHERE tem.jaar = ' ||
+                        p_jaar || ' ORDER BY tem.soort , tem.volgnr';
+    else
+      v_s_cur_string := 'SELECT tem.volgnr, tem.naam, tem.soort FROM ris_teams tem WHERE tem.jaar = ' ||
+                        p_jaar || ' and tem.soort = ' || '''' ||
+                        p_team_volgnr || '''' ||
+                        ' ORDER BY tem.soort , tem.volgnr';
+      v_s_soort      := p_team_volgnr;
+    end if;
+  
+    htp.p('<form name="toevoegen_wedstrijd" action="ris_pck_teams.doe_voegtoe_wedstrijd" method="POST">');
+    htp.p('<input type=hidden name="p_team_volgnr" value="' ||
+          p_team_volgnr || '">');
+    htp.formHidden('p_jaar', p_jaar);
+  
+    htp.p('<table align=left cellspacing=0 width="100%">');
+  
+    htp.p('<tr>');
+    htp.p('<th valign="TOP" align="RIGHT" nowrap><img src="' ||
+          ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          'required.gif">&nbsp;&nbsp;Datum (dd-mm-yyyy)&nbsp;</th>');
+    htp.p('<td><input name="p_datum" value="' || p_datum ||
+          '" type=text size=10 maxlength=10></td>');
+    htp.p('</tr><tr>');
+    htp.p('<th valign="TOP" align="RIGHT" nowrap>Tijdstip (uu.mi)&nbsp;</th>');
+    htp.p('<td><input name="p_tijdstip" value="' || p_tijdstip ||
+          '" type=text size=6 maxlength=5></td>');
+    htp.p('</tr><tr>');
+    htp.p('<th valign="TOP" align="RIGHT">wedstrijdnummer&nbsp;</th>');
+    htp.p('<td><input name="p_wedstrijd_nummer" value="' ||
+          p_wedstrijd_nummer || '" type=text size=10 maxlength=10></td>');
+    htp.p('</tr><tr>');
+    if p_team_volgnr in ('DEMOHB', 'DEMOSB') then
+      htp.p('<td colspan=2>');
+      htp.formHidden('p_type_wedstrijd', 'Demo');
+      htp.p('</td>');
+    else
+      htp.p('<th valign="TOP" align="RIGHT">Type wedstrijd&nbsp;</th>');
+      htp.p('<td>');
+      htp.p('<select onChange="javascript:wijzigVelden()" name="p_type_wedstrijd">');
+      if v_type_wedstrijd = 'Poule' then
+        htp.p('<option selected value="Poule">Poule</option>');
+      else
+        htp.p('<option value="Poule">Poule</option>');
+      end if;
+      if v_type_wedstrijd = 'Kruis' then
+        htp.p('<option selected value="Kruis">Kruis</option>');
+      else
+        htp.p('<option value="Kruis">Kruis</option>');
+      end if;
+      if v_type_wedstrijd = 'Finale' then
+        htp.p('<option selected value="Finale">Finale</option>');
+      else
+        htp.p('<option value="Finale">Finale</option>');
+      end if;
+      if v_type_wedstrijd = 'Mix' then
+        htp.p('<option selected value="Mix">Mix</option>');
+      else
+        htp.p('<option value="Mix">Mix</option>');
+      end if;
+      htp.p('</select>');
+      htp.p('</td>');
+    end if;
+  
+    htp.p('</tr><tr>');
+  
+    htp.p('<th valign="TOP" align="RIGHT"><img src="' ||
+          ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          'required.gif">&nbsp;&nbsp;Soort&nbsp;</th>');
+  
+    if p_team_volgnr is not null then
+      htp.formHidden('p_soort', p_team_volgnr);
+      htp.p('<td>' || p_team_volgnr || '</td>');
+    else
+      htp.p('<td><select name="p_soort">');
+      htp.p('<option value=""></option>');
+      for r_soort in c_soort loop
+        if p_soort = r_soort.afkorting then
+          htp.p('<option selected value="' || r_soort.afkorting || '">' ||
+                r_soort.afkorting || '</option>');
+        else
+          htp.p('<option value="' || r_soort.afkorting || '">' ||
+                r_soort.afkorting || '</option>');
+        end if;
+      end loop;
+      htp.p('</select>');
+    end if;
+    htp.p('</tr><tr>');
+  
+    if p_type_wedstrijd = 'Mix' then
+      htp.p('<th valign="TOP" align="RIGHT">Type Thuis&nbsp;</th>');
+      htp.p('<td>');
+      htp.p('<select onChange="javascript:wijzigVelden()" name="p_type_thuis">');
+    
+      if p_type_thuis is null then
+        htp.p('<option value=""></option>');
+      else
+        htp.p('<option value=""></option>');
+      end if;
+      if p_type_thuis = 'Kruis' then
+        htp.p('<option selected value="Kruis">Kruis</option>');
+      else
+        htp.p('<option value="Kruis">Kruis</option>');
+      end if;
+      if p_type_thuis = 'Finale' then
+        htp.p('<option selected value="Finale">Finale</option>');
+      else
+        htp.p('<option value="Finale">Finale</option>');
+      end if;
+      htp.p('</select>');
+    
+      htp.p('</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th valign="TOP" align="RIGHT">Type Uit&nbsp;</th>');
+      htp.p('<td>');
+      htp.p('<select onChange="javascript:wijzigVelden()" name="p_type_uit">');
+    
+      if p_type_uit is null then
+        htp.p('<option value=""></option>');
+      else
+        htp.p('<option value=""></option>');
+      end if;
+      if p_type_uit = 'Kruis' then
+        htp.p('<option selected value="Kruis">Kruis</option>');
+      else
+        htp.p('<option value="Kruis">Kruis</option>');
+      end if;
+      if p_type_uit = 'Finale' then
+        htp.p('<option selected value="Finale">Finale</option>');
+      else
+        htp.p('<option value="Finale">Finale</option>');
+      end if;
+      htp.p('</select>');
+    
+      htp.p('</td>');
+      htp.p('</tr><tr>');
+    else
+      htp.formhidden('p_type_thuis', null);
+      htp.formhidden('p_type_uit', null);
+    end if;
+    htp.p('<th valign="TOP" align="RIGHT"><img src="' ||
+          ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          'required.gif">&nbsp;&nbsp;Team&nbsp;</th>');
+  
+    if v_type_wedstrijd = 'Poule' then
+      htp.p('<td><select name="p_team">');
+      htp.p('<option value=""></option>');
+    
+      open v_cur_teams for v_s_cur_string;
+      loop
+        fetch v_cur_teams
+          into v_n_volgnr, v_s_team, v_s_soort;
+        exit when v_cur_teams%notfound;
+        htp.p('<option value="' || to_char(v_n_volgnr) || '">' ||
+              v_s_soort || ' ' || v_s_team || '</option>');
+      end loop;
+      htp.p('</select>');
+      htp.p(' - <select name="p_team2">');
+      htp.p('<option value=""></option>');
+      open v_cur_teams for v_s_cur_string;
+      loop
+        fetch v_cur_teams
+          into v_n_volgnr, v_s_team, v_s_soort;
+        exit when v_cur_teams%notfound;
+        htp.p('<option value="' || to_char(v_n_volgnr) || '">' ||
+              v_s_soort || ' ' || v_s_team || '</option>');
+      end loop;
+      htp.p('</select>');
+    
+      htp.p('</td>');
+    elsif v_type_wedstrijd = 'Kruis' then
+      htp.p('<td>');
+      htp.p('Poule: <input type="text" name="p_result" size="5" maxlength="5">&nbsp;Nr.<input name="p_team" type=text size=5 maxlength=5>');
+      htp.p(' - ');
+      htp.p('Poule: <input type="text" name="p_result2" size="5" maxlength="5">&nbsp;Nr.<input name="p_team2" type=text size=5 maxlength=5>');
+      htp.p('</td>');
+    elsif v_type_wedstrijd = 'Finale' then
+      htp.p('<td>');
+      htp.p('<select name="p_result"><option value="Winnaar">Winnaar</option><option value="Verliezer">Verliezer</option></select>&nbsp;Wedstrijdnr.<input name="p_team" type=text size=5 maxlength=5>');
+      htp.p(' - ');
+      htp.p('<select name="p_result2"><option value="Winnaar">Winnaar</option><option value="Verliezer">Verliezer</option></select>&nbsp;Wedstrijdnr.<input name="p_team2" type=text size=5 maxlength=5>');
+      htp.p('</td>');
+    elsif v_type_wedstrijd = 'Mix' then
+      htp.p('<td>');
+      if p_type_thuis = 'Kruis' then
+        htp.p('Poule: <input type="text" name="p_result" size="5" maxlength="5">&nbsp;Nr.<input name="p_team" type=text size=5 maxlength=5>');
+      end if;
+      if p_type_thuis = 'Finale' then
+        htp.p('<select name="p_result"><option value="Winnaar">Winnaar</option><option value="Verliezer">Verliezer</option></select>&nbsp;Wedstrijdnr.<input name="p_team" type=text size=5 maxlength=5>');
+      end if;
+      htp.p(' - ');
+      if p_type_uit = 'Kruis' then
+        htp.p('Poule: <input type="text" name="p_result2" size="5" maxlength="5">&nbsp;Nr.<input name="p_team2" type=text size=5 maxlength=5>');
+      end if;
+      if p_type_uit = 'Finale' then
+        htp.p('<select name="p_result2"><option value="Winnaar">Winnaar</option><option value="Verliezer">Verliezer</option></select>&nbsp;Wedstrijdnr.<input name="p_team2" type=text size=5 maxlength=5>');
+      end if;
+      htp.p('</td>');
+    elsif v_type_wedstrijd = 'Demo' then
+      htp.p('<td>');
+      htp.p('<input type="text" name="p_team" size="50">');
+      htp.p(' - ');
+      htp.p('<input type="text" name="p_team2" size="50">');
+      htp.p('</td>');
+    end if;
+  
+    htp.p('</tr><tr>');
+    htp.p('<th valign="TOP" align="RIGHT">Scheidsrechters&nbsp;</th>');
+    htp.p('<td><input name="p_scheidsrechters" value="' ||
+          p_scheidsrechters || '" type=text size=50 maxlength=50></td>');
+    htp.p('</tr><tr>');
+    htp.p('<th valign="TOP" align="RIGHT">Opmerking&nbsp;</th>');
+    htp.p('<td><input name="p_opmerking" value="' || p_opmerking ||
+          '" type=text size=50 maxlength=50></td>');
+    htp.p('</tr>');
+  
+    htp.p('</table>');
+    htp.p('</form>');
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.p('<button onClick="javascript:bewaar()">Bewaren</button>');
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_voegtoe_wedstrijd(p_team_volgnr      in varchar2,
+                                  p_datum            in varchar2,
+                                  p_tijdstip         in varchar2,
+                                  p_soort            in varchar2,
+                                  p_team             in varchar2,
+                                  p_team2            in varchar2,
+                                  p_type_thuis       in varchar2 default null,
+                                  p_type_uit         in varchar2 default null,
+                                  p_result           in varchar2 default null,
+                                  p_result2          in varchar2 default null,
+                                  p_wedstrijd_nummer in varchar2,
+                                  p_type_wedstrijd   in varchar2,
+                                  p_opmerking        in varchar2,
+                                  p_scheidsrechters  in varchar2,
+                                  p_jaar             in varchar2) is
+  
+    v_poule_thuis    varchar2(10);
+    v_poule_thuis_nr varchar2(10);
+    v_thuis_wv       varchar2(10);
+    v_thuis_wed      varchar2(10);
+    v_thuis_nr       varchar2(10);
+    v_poule_uit      varchar2(10);
+    v_poule_uit_nr   varchar2(10);
+    v_uit_wv         varchar2(10);
+    v_uit_wed        varchar2(10);
+    v_uit_nr         varchar2(10);
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    if p_type_wedstrijd = 'Poule' then
+      INSERT INTO ris_wedstrijden_poule
+        (volgnr,
+         datum,
+         wedstrijd_nummer,
+         tijdstip,
+         punten_voor,
+         punten_tegen,
+         team_volgnr,
+         team2_volgnr,
+         soort,
+         opmerking,
+         scheidsrechters,
+         jaar)
+      values
+        (wed_seq.nextval,
+         trunc(to_date(p_datum, 'DD-MM-YYYY')),
+         p_wedstrijd_nummer,
+         p_tijdstip,
+         to_char(null),
+         to_char(null),
+         to_number(p_team),
+         to_number(p_team2),
+         p_soort,
+         p_opmerking,
+         p_scheidsrechters,
+         to_number(p_jaar));
+    elsif p_type_wedstrijd = 'Kruis' then
+      INSERT INTO ris_wedstrijden_kruis
+        (volgnr,
+         datum,
+         wedstrijd_nummer,
+         tijdstip,
+         punten_voor,
+         punten_tegen,
+         poule_thuis,
+         poule_thuis_nr,
+         poule_uit,
+         poule_uit_nr,
+         soort,
+         opmerking,
+         scheidsrechters,
+         jaar)
+      values
+        (wed_seq.nextval,
+         to_date(p_datum, 'DD-MM-YYYY'),
+         p_wedstrijd_nummer,
+         p_tijdstip,
+         to_char(null),
+         to_char(null),
+         p_result,
+         p_team,
+         p_result2,
+         p_team2,
+         p_soort,
+         p_opmerking,
+         p_scheidsrechters,
+         to_number(p_jaar));
+    elsif p_type_wedstrijd = 'Finale' then
+      INSERT INTO ris_wedstrijden_finale
+        (volgnr,
+         datum,
+         wedstrijd_nummer,
+         tijdstip,
+         punten_voor,
+         punten_tegen,
+         thuis_wv,
+         thuis_wed,
+         thuis_nr,
+         uit_wv,
+         uit_wed,
+         uit_nr,
+         soort,
+         opmerking,
+         scheidsrechters,
+         jaar)
+      values
+        (wed_seq.nextval,
+         to_date(p_datum, 'DD-MM-YYYY'),
+         p_wedstrijd_nummer,
+         p_tijdstip,
+         to_char(null),
+         to_char(null),
+         p_result,
+         p_team,
+         null,
+         p_result2,
+         p_team2,
+         null,
+         p_soort,
+         p_opmerking,
+         p_scheidsrechters,
+         to_number(p_jaar));
+    elsif p_type_wedstrijd = 'Demo' then
+      INSERT INTO ris_wedstrijden_demo
+        (volgnr,
+         datum,
+         wedstrijd_nummer,
+         tijdstip,
+         punten_voor,
+         punten_tegen,
+         team_thuis,
+         team_uit,
+         soort,
+         opmerking,
+         scheidsrechters,
+         jaar)
+      values
+        (wed_seq.nextval,
+         trunc(to_date(p_datum, 'DD-MM-YYYY')),
+         p_wedstrijd_nummer,
+         p_tijdstip,
+         to_char(null),
+         to_char(null),
+         p_team,
+         p_team2,
+         p_soort,
+         p_opmerking,
+         p_scheidsrechters,
+         to_number(p_jaar));
+    elsif p_type_wedstrijd = 'Mix' then
+      if p_type_thuis = 'Kruis' then
+        v_poule_thuis    := p_result;
+        v_poule_thuis_nr := p_team;
+        -- Finale-velden op null zetten
+        v_thuis_wv  := null;
+        v_thuis_wed := null;
+        v_thuis_nr  := null;
+      end if;
+      if p_type_thuis = 'Finale' then
+        v_thuis_wv  := p_result;
+        v_thuis_wed := p_team;
+        v_thuis_nr  := null;
+        -- Kruis-velden op null zetten
+        v_poule_thuis    := null;
+        v_poule_thuis_nr := null;
+      end if;
+      if p_type_uit = 'Kruis' then
+        v_poule_uit    := p_result2;
+        v_poule_uit_nr := p_team2;
+        -- Finale-velden op null zetten
+        v_uit_wv  := null;
+        v_uit_wed := null;
+        v_uit_nr  := null;
+      end if;
+      if p_type_uit = 'Finale' then
+        v_uit_wv  := p_result2;
+        v_uit_wed := p_team2;
+        v_uit_nr  := null;
+        -- Kruis-velden op null zetten
+        v_poule_uit    := null;
+        v_poule_uit_nr := null;
+      end if;
+    
+      INSERT INTO ris_wedstrijden_mix
+        (volgnr,
+         datum,
+         wedstrijd_nummer,
+         tijdstip,
+         punten_voor,
+         punten_tegen,
+         type_thuis,
+         type_uit,
+         poule_thuis,
+         poule_thuis_nr,
+         poule_uit,
+         poule_uit_nr,
+         thuis_wv,
+         thuis_wed,
+         thuis_nr,
+         uit_wv,
+         uit_wed,
+         uit_nr,
+         soort,
+         opmerking,
+         scheidsrechters,
+         jaar)
+      values
+        (wed_seq.nextval,
+         to_date(p_datum, 'DD-MM-YYYY'),
+         p_wedstrijd_nummer,
+         p_tijdstip,
+         to_char(null),
+         to_char(null),
+         p_type_thuis,
+         p_type_uit,
+         v_poule_thuis,
+         v_poule_thuis_nr,
+         v_poule_uit,
+         v_poule_uit_nr,
+         v_thuis_wv,
+         v_thuis_wed,
+         v_thuis_nr,
+         v_uit_wv,
+         v_uit_wed,
+         v_uit_nr,
+         p_soort,
+         p_opmerking,
+         p_scheidsrechters,
+         to_number(p_jaar));
+    end if;
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Toevoegen Wedstrijd',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Soort: ' || p_soort);
+  end;
+  ------------------------------------------------------------------------------------
+  procedure wedstrijd_verwijder(p_wed_volgnr     in varchar2,
+                                p_team_volgnr    in varchar2,
+                                p_type_wedstrijd in varchar2,
+                                p_jaar           in varchar2) is
+  
+    cursor c_wedstrijd is
+      SELECT wed.*
+        FROM ris_v_wedstrijden wed
+       WHERE wed.volgnr = to_number(p_wed_volgnr)
+         AND wed.type_wedstrijd = p_type_wedstrijd;
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Verwijder Wedstrijd');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>
+             function verwijder() {
+               document.verwijder_wedstrijd.submit();
+             }
+           </script>');
+  
+    htp.p('<form name="verwijder_wedstrijd" action="ris_pck_teams.doe_verwijder_wedstrijd" method=POST>');
+    htp.p('<input type="hidden" name="p_wed_volgnr" value="' ||
+          p_wed_volgnr || '">');
+    htp.p('<input type="hidden" name="p_team_volgnr" value="' ||
+          p_team_volgnr || '">');
+    htp.p('<input type="hidden" name="p_type_wedstrijd" value="' ||
+          p_type_wedstrijd || '">');
+    htp.formHidden('p_jaar', p_jaar);
+  
+    htp.p('<table align=left cellspacing=0>');
+  
+    for r_wedstrijd in c_wedstrijd loop
+      htp.p('<tr>');
+      htp.p('<th align="RIGHT">Datum&nbsp;</th>');
+      htp.p('<td>' || to_char(r_wedstrijd.datum, 'DD-MM-YYYY') || '</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Tijdstip&nbsp;</th>');
+      htp.p('<td>' || r_wedstrijd.tijdstip || '</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Wedstrijd nummer&nbsp;</th>');
+      htp.p('<td>' || r_wedstrijd.wedstrijd_nummer || '</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Soort&nbsp;</th>');
+      htp.p('<td>' || r_wedstrijd.soort || '</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Thuis&nbsp;</th>');
+      htp.p('<td>' || r_wedstrijd.display_thuis || '</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Uit&nbsp;</th>');
+      htp.p('<td>' || r_wedstrijd.display_uit || '</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Opmerking&nbsp;</th>');
+      htp.p('<td>' || r_wedstrijd.opmerking || '</td>');
+      htp.p('</tr>');
+    end loop;
+  
+    htp.p('</table');
+    htp.p('</form>');
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.p('<button onClick="javascript:verwijder()">Verwijder</button>');
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_verwijder_wedstrijd(p_wed_volgnr     in varchar2,
+                                    p_team_volgnr    in varchar2,
+                                    p_type_wedstrijd in varchar2,
+                                    p_jaar           in varchar2) is
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    if p_type_wedstrijd = 'Poule' then
+      DELETE FROM ris_wedstrijden_poule
+       WHERE volgnr = to_number(p_wed_volgnr);
+    end if;
+    if p_type_wedstrijd = 'Kruis' then
+      DELETE FROM ris_wedstrijden_kruis
+       WHERE volgnr = to_number(p_wed_volgnr);
+    end if;
+    if p_type_wedstrijd = 'Finale' then
+      DELETE FROM ris_wedstrijden_finale
+       WHERE volgnr = to_number(p_wed_volgnr);
+    end if;
+    if p_type_wedstrijd = 'Mix' then
+      DELETE FROM ris_wedstrijden_mix
+       WHERE volgnr = to_number(p_wed_volgnr);
+    end if;
+    if p_type_wedstrijd = 'Demo' then
+      DELETE FROM ris_wedstrijden_demo
+       WHERE volgnr = to_number(p_wed_volgnr);
+    end if;
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Verwijderen Wedstrijd',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Wedstrijdnummer: ' || p_wed_volgnr);
+  end;
+  ------------------------------------------------------------------------------------
+  procedure lineup(p_team_volgnr in varchar2, p_jaar in varchar2) is
+  
+    v_s_team_naam varchar2(100);
+  
+    cursor c_team is
+      SELECT naam, poule, soort, foto
+        FROM ris_teams
+       WHERE volgnr = to_number(p_team_volgnr);
+  
+    cursor c_teamleden is
+      SELECT dns.volgnr,
+             dns.achternaam,
+             dns.tussenvoegsel,
+             dns.voornaam,
+             dns.posities,
+             dns.rugnummer,
+             dns.sds_volgnr,
+             sds.omschrijving
+        FROM ris_deelnemers dns, ris_soort_deelnemers sds
+       WHERE tem_volgnr = to_number(p_team_volgnr)
+         AND dns.sds_volgnr = sds.volgnr
+       ORDER BY dns.sds_volgnr, dns.achternaam, dns.voornaam;
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body>');
+  
+    htp.p('<script>');
+    htp.p('  function voegtoe() { ');
+    htp.p('    document.location.href="ris_pck_teams.deelnr_toevoegen?p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function verwijder(v_type) { ');
+    htp.p('    if (v_type == "TEAMFOTO") { ');
+    htp.p('      if (confirm("Teamfoto verwijderen?")) { ');
+    htp.p('        document.location.href="ris_pck_teams.doe_wijzig_teamfoto?p_team_volgnr=' ||
+          p_team_volgnr || '&url=&p_jaar=' || p_jaar || '"; ');
+    htp.p('      } ');
+    htp.p('    } ');
+    htp.p('  } ');
+    htp.p('</script>');
+  
+    for r_team in c_team loop
+      v_s_team_naam := r_team.naam;
+      htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Lineup van ' ||
+            r_team.naam || ' ' || r_team.soort);
+      htp.br;
+      htp.br;
+      htp.br;
+    end loop;
+    htp.p('<button onClick="javascript:voegtoe()">Toevoegen</button>');
+    htp.br;
+    htp.p('<table cellspacing=0 class="infotable">');
+    htp.p('<tr>');
+    htp.p('<th class="infoth">Wijzig&nbsp;</th>');
+    htp.p('<th class="infoth">Verwijder&nbsp;</th>');
+    htp.p('<th class="infoth">Teamlid&nbsp;</th>');
+    htp.p('<th class="infoth">Functie&nbsp;</th>');
+    htp.p('<th class="infoth">Positie&nbsp;</th>');
+    htp.p('<th class="infoth">Rugnr.&nbsp;</th>');
+    htp.p('</tr>');
+  
+    for r_teamleden in c_teamleden loop
+      htp.p('<tr>');
+      htp.p('<td class="infotd" align=center><a href="ris_pck_teams.deelnr_wijzig?p_dnr_volgnr=' ||
+            r_teamleden.volgnr || '&p_team_volgnr=' || p_team_volgnr ||
+            '&p_jaar=' || p_jaar || '"><img border=0 alt="Wijzigen" src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'edit_icon.gif"></a></td>');
+      htp.p('<td class="infotd" align=center><a href="ris_pck_teams.deelnr_verwijder?p_dnr_volgnr=' ||
+            r_teamleden.volgnr || '&p_team_volgnr=' || p_team_volgnr ||
+            '&p_jaar=' || p_jaar ||
+            '"><img border=0 alt="Verwijderen" src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'delete_icon.gif"></a></td>');
+    
+      htp.p('<td class="infotd">' || r_teamleden.voornaam || ' ' ||
+            r_teamleden.tussenvoegsel || ' ' || r_teamleden.achternaam ||
+            '</td>');
+      htp.p('<td class="infotd">' || r_teamleden.omschrijving || '</td>');
+      htp.p('<td class="infotd">' || r_teamleden.posities || '</td>');
+      htp.p('<td class="infotd">' || to_char(r_teamleden.rugnummer) ||
+            '</td>');
+      htp.p('</tr>');
+    end loop;
+  
+    htp.p('</table>');
+    htp.br;
+    for r_team in c_team loop
+      htp.p('<table cellspacing=0 class="infotable">');
+      htp.p('<tr>');
+      htp.p('  <th width="280" class="infoth" colspan=3>Teamfoto&nbsp;&nbsp;</th>');
+      htp.p('</tr>');
+      htp.p('<tr>');
+      htp.p('  <td width="10" class="infotd" align=center><a href="ris_pck_teams.teamfoto_wijzig?p_team_volgnr=' ||
+            p_team_volgnr || '&p_jaar=' || p_jaar ||
+            '"><img alt="Wijzigen" border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'edit_icon.gif"></a></td>');
+      htp.p('  <td width="10" class="infotd" align=center><a href="javascript:verwijder(' || '''' ||
+            'TEAMFOTO' || '''' ||
+            ')"><img alt="Verwijderen" border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'delete_icon.gif"></a></td>');
+    
+      if r_team.foto is null then
+        htp.p('<td width="260">Geen</td>');
+      else
+        htp.p('<td width="260">' || r_team.foto || '</td>');
+        htp.p('</tr><tr>');
+        htp.p('<td colspan=3><img border="0" src="/ris-doc/' || p_jaar ||
+              '/teamfotos/' || r_team.foto || '"></td>');
+      end if;
+    
+      htp.p('</tr></table>');
+    
+    end loop;
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure toon_lineup(p_team_volgnr in varchar2, p_jaar in varchar2) is
+  
+    v_s_geenteamfoto     varchar2(2000) := null;
+    v_s_rugnr            varchar2(2000) := null;
+    v_s_teamlid          varchar2(2000) := null;
+    v_s_posities         varchar2(2000) := null;
+    v_n_aantal_teamleden number := 0;
+    v_n_regel_nummer     number := 0;
+  
+    cursor c_team is
+      SELECT tem.naam, tem.poule, tem.soort, tem.foto, tem.foto_big
+        FROM ris_teams tem
+       WHERE volgnr = to_number(p_team_volgnr);
+  
+    cursor c_teamleden is
+      SELECT dns.volgnr,
+             dns.achternaam,
+             dns.tussenvoegsel,
+             dns.voornaam,
+             dns.posities,
+             dns.sds_volgnr,
+             dns.rugnummer,
+             sds.omschrijving
+        FROM ris_deelnemers dns, ris_soort_deelnemers sds
+       WHERE tem_volgnr = to_number(p_team_volgnr)
+         AND dns.sds_volgnr = sds.volgnr
+       ORDER BY dns.sds_volgnr, dns.achternaam, dns.voornaam;
+  
+  begin
+    ris_pck_alg.header('false', p_jaar);
+  
+    htp.p('<body>');
+--    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+--          'l_s_bbs.jpg" align=absbottom><font size=6>Lineup');
+    htp.p('<font size=5>Lineup<br/>');
+    for r_team in c_team loop
+      htp.p('<BR>');
+    
+      htp.p('<table cellspacing=0 cellpadding=0 width="600" class="infotable">');
+      htp.p('<tr>');
+      htp.p('<th class="infoth" width="2">&nbsp;</th>');
+      htp.p('<th colspan=3 class="infoth" width="594">' || r_team.naam || ' ' ||
+            r_team.soort || '</th>');
+      htp.p('<TR>');
+    
+      v_s_geenteamfoto := 'Geen teamfoto beschikbaar / No teamfoto available';
+    
+      if r_team.foto is not null then
+        if r_team.foto_big is not null then
+          htp.p('<TD colspan=4 align="CENTER"><a href="/ris-doc/' ||
+                p_jaar || '/teamfotos/big/' || r_team.foto_big ||
+                '"><img border="0" alt="Click for big photo (2MB)" src="/ris-doc/' ||
+                p_jaar || '/teamfotos/' || r_team.foto ||
+                '" width="600"></a></TD>');
+        else
+          htp.p('<TD colspan=4 align="CENTER"><img src="/ris-doc/' ||
+                p_jaar || '/teamfotos/' || r_team.foto ||
+                '" width="600"></TD>');
+        end if;
+      else
+        htp.p('<td colspan=4 align="CENTER">' || v_s_geenteamfoto ||
+              '</td>');
+      end if;
+    
+      htp.p('</tr>');
+    end loop;
+  
+    v_s_rugnr    := 'Rugnr.<BR>Nr.';
+    v_s_teamlid  := 'Teamlid<BR>Member';
+    v_s_posities := 'Posities<BR>Positions';
+  
+    htp.p('<tr>');
+    htp.p('<th class="infoth" width="2">&nbsp;</th>');
+    htp.p('<th class="infoth" width="48" height="35">' || v_s_rugnr ||
+          '&nbsp;</th>');
+    htp.p('<th class="infoth" width="450" height="35">' || v_s_teamlid ||
+          '&nbsp;</th>');
+    htp.p('<th class="infoth" width="100" height="35">' || v_s_posities ||
+          '&nbsp;</th>');
+    htp.p('</TR>');
+  
+    for r_teamleden in c_teamleden loop
+      v_n_regel_nummer := v_n_regel_nummer + 1;
+      if (v_n_regel_nummer / 2) != round(v_n_regel_nummer / 2) then
+        htp.p('<tr>');
+      else
+        htp.p('<tr class="even">');
+      end if;
+      htp.p('<td>&nbsp;</td>');
+      htp.p('<td>' || r_teamleden.rugnummer || '</td>');
+      htp.p('<td wrap>' || r_teamleden.voornaam || ' ' ||
+            r_teamleden.tussenvoegsel || ' ' || r_teamleden.achternaam ||
+            '</td>');
+      if r_teamleden.omschrijving = 'Speler' then
+        htp.p('<td wrap>' || r_teamleden.posities || '</td>');
+      else
+        htp.p('<td wrap>' || r_teamleden.omschrijving || '</td>');
+      end if;
+      htp.p('</TR>');
+    end loop;
+  
+    htp.p('</TABLE>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure deelnr_toevoegen(p_team_volgnr in varchar2, p_jaar in varchar2) is
+  
+    v_s_team_naam varchar2(100);
+  
+    cursor c_team is
+      SELECT naam, poule, soort
+        FROM ris_teams
+       WHERE volgnr = to_number(p_team_volgnr);
+  
+    cursor c_soort_deelnemers is
+      SELECT volgnr, omschrijving
+        FROM ris_soort_deelnemers
+       ORDER by omschrijving;
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body onLoad="document.toevoegen_deelnr.p_voornaam.focus()">');
+  
+    htp.p('<script> ');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (document.toevoegen_deelnr.p_achternaam.value == "") {
+                  alert("Achternaam is verplicht!");
+                  controle = false;
+                }
+                if (document.toevoegen_deelnr.p_sds_volgnr.value == "") {
+                  alert("Soort is verplicht!");
+                  controle = false;
+                }
+                if (controle) {
+                  document.toevoegen_deelnr.submit();
+                }
+              } ');
+    htp.p('</script>');
+  
+    for r_team in c_team loop
+      v_s_team_naam := r_team.naam;
+      htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Nieuwe deelnemer voor ' ||
+            r_team.naam || ' ' || r_team.soort);
+      htp.p('<BR><BR><BR>');
+    end loop;
+  
+    htp.p('<form name="toevoegen_deelnr" action="ris_pck_teams.doe_voegtoe_deelnr" method=POST>');
+    htp.p('<input type=hidden name="p_team_volgnr" value="' ||
+          p_team_volgnr || '">');
+    htp.formHidden('p_jaar', p_jaar);
+  
+    htp.p('<BR>');
+  
+    htp.p('<table align=left cellspacing=0>');
+  
+    htp.p('<tr>');
+    htp.p('<th align="RIGHT">Voornaam&nbsp;</th>');
+    htp.p('<td><input name="p_voornaam" type=text size=25 maxlength=50></td>');
+    htp.p('</tr><tr>');
+    htp.p('<th align="RIGHT">Tussenvoegsel&nbsp;</th>');
+    htp.p('<td><input name="p_tussenvoegsel" type=text size=20 maxlength=50></td>');
+    htp.p('</tr><tr>');
+    htp.p('<th align="RIGHT"><img src="' ||
+          ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          'required.gif">&nbsp;&nbsp;Achternaam&nbsp;</th>');
+    htp.p('<td><input name="p_achternaam" type=text size=25 maxlength=50></td>');
+    htp.p('</tr><tr>');
+    htp.p('<th align="RIGHT">Rugnummer&nbsp;</th>');
+    htp.p('<td><input name="p_rugnummer" type=text size=10 maxlength=10></td>');
+    htp.p('</tr><tr>');
+    htp.p('<th align="RIGHT">Posities&nbsp;</th>');
+    htp.p('<td><input name="p_posities" type=text size=40 maxlength=50></td>');
+    htp.p('</tr><tr>');
+    htp.p('<th align="RIGHT"><img src="' ||
+          ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          'required.gif">&nbsp;&nbsp;Soort&nbsp;</th><td><SELECT NAME="p_sds_volgnr"><OPTION value=""></OPTION>');
+  
+    for r_soort_deelnemers in c_soort_deelnemers loop
+      htp.p('<OPTION value="' || r_soort_deelnemers.volgnr || '">' ||
+            r_soort_deelnemers.omschrijving || '</OPTION>');
+    end loop;
+  
+    htp.p('</SELECT></td>');
+    htp.p('</tr>');
+    htp.p('<tr>');
+    htp.p('<td colspan="2"><button onClick="javascript:bewaar()">Bewaar</button></td>');
+    htp.p('</tr>');
+    htp.p('</table>');
+    htp.p('</form>');
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_voegtoe_deelnr(p_team_volgnr   in varchar2,
+                               p_voornaam      in varchar2,
+                               p_tussenvoegsel in varchar2,
+                               p_achternaam    in varchar2,
+                               p_posities      in varchar2,
+                               p_rugnummer     in varchar2,
+                               p_sds_volgnr    in varchar2,
+                               p_jaar          in varchar2) is
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    INSERT INTO ris_deelnemers
+      (volgnr,
+       achternaam,
+       tussenvoegsel,
+       voornaam,
+       posities,
+       rugnummer,
+       tem_volgnr,
+       sds_volgnr,
+       jaar)
+    values
+      (dnr_seq.nextval,
+       p_achternaam,
+       p_tussenvoegsel,
+       p_voornaam,
+       p_posities,
+       to_number(p_rugnummer),
+       to_number(p_team_volgnr),
+       to_number(p_sds_volgnr),
+       to_number(p_jaar));
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.lineup?p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Toevoegen deelnemer',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Team: ' || p_team_volgnr || ', Naam: ' ||
+                                  p_voornaam || ' ' || p_tussenvoegsel || ' ' ||
+                                  p_achternaam);
+    
+  end;
+  ------------------------------------------------------------------------------------
+  procedure deelnr_wijzig(p_dnr_volgnr  in varchar2,
+                          p_team_volgnr in varchar2,
+                          p_jaar        in varchar2) is
+  
+    cursor c_deelnemer is
+      SELECT dns.volgnr,
+             dns.achternaam,
+             dns.tussenvoegsel,
+             dns.voornaam,
+             dns.posities,
+             dns.sds_volgnr,
+             dns.rugnummer,
+             sds.omschrijving
+        FROM ris_deelnemers dns, ris_soort_deelnemers sds
+       WHERE dns.sds_volgnr = sds.volgnr
+         AND dns.volgnr = to_number(p_dnr_volgnr);
+  
+    cursor c_soort_deelnemers is
+      SELECT volgnr, omschrijving
+        FROM ris_soort_deelnemers
+       ORDER by omschrijving;
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Wijzig Deelnemer');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script> ');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (document.wijzig_deelnr.p_achternaam.value == "") {
+                  alert("Achternaam is verplicht!");
+                  controle = false;
+                }
+                if (document.wijzig_deelnr.p_sds_volgnr.value == "") {
+                  alert("Soort is verplicht!");
+                  controle = false;
+                }
+                if (controle) {
+                  document.wijzig_deelnr.submit();
+                }
+              }
+              function insertImage() {
+                browseWindow = window.open("' ||
+          ris_pck_alg.geef_syspar('URL_WEB_AGENT') ||
+          'ris_pck_bestanden.kies_bestand_dialog?p_dce_volgnr=' ||
+          ris_pck_alg.geef_syspar('SPELERSFOTO_CATEGORIE') || '&p_change=F","browse","status=yes toolbar=no scrollbars=yes resizable=yes width=800 height=600");
+              }
+          ');
+    htp.p('</script>');
+  
+    htp.p('<form name="wijzig_deelnr" action="ris_pck_teams.doe_wijzig_deelnr" method="POST">');
+    htp.p('<input type=hidden name="p_dnr_volgnr" value="' || p_dnr_volgnr || '">');
+    htp.p('<input type=hidden name="p_team_volgnr" value="' ||
+          p_team_volgnr || '">');
+    htp.formHidden('p_jaar', p_jaar);
+  
+    htp.p('<table align=left cellspacing=0>');
+  
+    for r_deelnemer in c_deelnemer loop
+      htp.p('<tr>');
+      htp.p('<th align="RIGHT">Voornaam&nbsp;</th>');
+      htp.p('<td class="infotd"><input name="p_voornaam" type=text value="' ||
+            r_deelnemer.voornaam || '" size=25 maxlength=50></td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Tussenvoegsel&nbsp;</th>');
+      htp.p('<td class="infotd"><input name="p_tussenvoegsel" type=text value="' ||
+            r_deelnemer.tussenvoegsel || '" size=10 maxlength=50></td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT"><img src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'required.gif">&nbsp;&nbsp;Achternaam&nbsp;</th>');
+      htp.p('<td class="infotd"><input name="p_achternaam" type=text value="' ||
+            r_deelnemer.achternaam || '" size=25 maxlength=50></td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Posities&nbsp;</th>');
+      htp.p('<td class="infotd"><input name="p_posities" type=text value="' ||
+            r_deelnemer.posities || '" size=30 maxlength=50></td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Rugnummer&nbsp;</th>');
+      htp.p('<td class="infotd"><input name="p_rugnummer" type=text value="' ||
+            to_char(r_deelnemer.rugnummer) ||
+            '" size=10 maxlength=10></td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT"><img src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'required.gif">&nbsp;&nbsp;Soort&nbsp;</th><td class="infotd"><SELECT NAME="p_sds_volgnr"><OPTION value=""></OPTION>');
+    
+      for r_soort_deelnemers in c_soort_deelnemers loop
+        if r_soort_deelnemers.volgnr = r_deelnemer.sds_volgnr then
+          htp.p('<OPTION SELECTED value="' ||
+                to_char(r_soort_deelnemers.volgnr) || '">' ||
+                r_soort_deelnemers.omschrijving || '</OPTION>');
+        else
+          htp.p('<OPTION value="' || to_char(r_soort_deelnemers.volgnr) || '">' ||
+                r_soort_deelnemers.omschrijving || '</OPTION>');
+        end if;
+      end loop;
+    
+      htp.p('</SELECT></td>');
+      htp.p('</tr>');
+    
+    end loop;
+  
+    htp.p('<tr><td colspan="2"><button onClick="javascript:bewaar()">Bewaar</button></td></tr>');
+    htp.p('</table>');
+    htp.p('</form>');
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_wijzig_deelnr(p_dnr_volgnr    in varchar2,
+                              p_team_volgnr   in varchar2,
+                              p_voornaam      in varchar2,
+                              p_tussenvoegsel in varchar2,
+                              p_achternaam    in varchar2,
+                              p_posities      in varchar2,
+                              p_rugnummer     in varchar2,
+                              p_sds_volgnr    in varchar2,
+                              p_jaar          in varchar2) is
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    UPDATE ris_deelnemers
+       SET voornaam      = p_voornaam,
+           tussenvoegsel = p_tussenvoegsel,
+           achternaam    = p_achternaam,
+           posities      = p_posities,
+           rugnummer     = p_rugnummer,
+           sds_volgnr    = p_sds_volgnr
+     WHERE volgnr = to_number(p_dnr_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.lineup?p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Wijzigen Deelnemer',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Deelnemernummer: ' || p_dnr_volgnr);
+    
+  end;
+  ------------------------------------------------------------------------------------
+  procedure deelnr_verwijder(p_dnr_volgnr  in varchar2,
+                             p_team_volgnr in varchar2,
+                             p_jaar        in varchar2) is
+  
+    v_n_sds_volgnr number := null;
+    v_s_soort      ris_soort_deelnemers.omschrijving%type := null;
+  
+    cursor c_deelnemer is
+      SELECT dnr.volgnr,
+             dnr.achternaam,
+             dnr.tussenvoegsel,
+             dnr.voornaam,
+             dnr.posities,
+             dnr.rugnummer,
+             dnr.sds_volgnr
+        FROM ris_deelnemers dnr
+       WHERE dnr.volgnr = to_number(p_dnr_volgnr);
+  
+    cursor c_soort is
+      select sds.omschrijving
+        from ris_soort_deelnemers sds
+       where sds.volgnr = v_n_sds_volgnr;
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Verwijder deelnemer');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>
+              function verwijder() {
+                document.verwijder_deelnr.submit();
+              }
+            </script>');
+  
+    htp.p('<form name="verwijder_deelnr" action="ris_pck_teams.doe_verwijder_deelnr" method=POST>');
+    htp.p('<input type=hidden name="p_dnr_volgnr" value="' || p_dnr_volgnr || '">');
+    htp.p('<input type=hidden name="p_team_volgnr" value="' ||
+          p_team_volgnr || '">');
+    htp.formhidden('p_jaar', p_jaar);
+  
+    htp.p('<table align=left cellspacing=0>');
+  
+    for r_deelnemer in c_deelnemer loop
+      v_n_sds_volgnr := r_deelnemer.sds_volgnr;
+      open c_soort;
+      fetch c_soort
+        into v_s_soort;
+      close c_soort;
+    
+      htp.p('<tr>');
+      htp.p('<th align="RIGHT">Naam&nbsp;</th>');
+      htp.p('<td>' || r_deelnemer.voornaam || ' ' ||
+            r_deelnemer.tussenvoegsel || ' ' || r_deelnemer.achternaam ||
+            '</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Posities&nbsp;</th>');
+      htp.p('<td>' || r_deelnemer.posities || '</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Rugnummer&nbsp;</th>');
+      htp.p('<td>' || r_deelnemer.rugnummer || '</td>');
+      htp.p('</tr><tr>');
+      htp.p('<th align="RIGHT">Soort&nbsp;</th>');
+      htp.p('<td>' || v_s_soort || '</td>');
+      htp.p('</tr>');
+    end loop;
+    htp.p('<tr><td colspan="2"><button onClick="verwijder()">Verwijder</button></td></tr>');
+    htp.p('</table');
+    htp.p('</form>');
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_verwijder_deelnr(p_dnr_volgnr  in varchar2,
+                                 p_team_volgnr in varchar2,
+                                 p_jaar        in varchar2) is
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    DELETE FROM ris_deelnemers WHERE volgnr = to_number(p_dnr_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.lineup?p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Verwijderen Deelnemer',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Deelnemernummer: ' || p_dnr_volgnr);
+    
+  end;
+  ------------------------------------------------------------------------------------
+  procedure teamfoto_wijzig(p_team_volgnr in varchar2, p_jaar in varchar2) is
+  
+    cursor c_team is
+      SELECT naam, soort, foto
+        FROM ris_teams
+       WHERE volgnr = to_number(p_team_volgnr);
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    htp.p('<body onLoad="document.wijzig_deelnr.url.focus()">');
+  
+    htp.p('<script>
+              function bewaar() {
+                document.wijzig_deelnr.submit();
+              }
+          ');
+    htp.p('</script>');
+  
+    htp.p('<form name="wijzig_deelnr" action="ris_pck_teams.doe_wijzig_teamfoto" method=POST>');
+    htp.p('<input type=hidden name="p_team_volgnr" value="' ||
+          p_team_volgnr || '">');
+    htp.formhidden('p_jaar', p_jaar);
+  
+    for r_team in c_team loop
+      htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Wijzig Teamfoto ' ||
+            r_team.naam || ' ' || r_team.soort);
+      htp.p('<BR><BR><BR>');
+    
+      htp.p('<table align=left cellspacing=0>');
+      htp.p('<tr>');
+      htp.p('<th valign="TOP">Teamfoto</th>');
+      htp.p('<td><input name="url" type=text value="' || r_team.foto ||
+            '" size=50 maxlength=100></td>');
+      htp.p('</tr>');
+      htp.p('</table>');
+    end loop;
+  
+    htp.p('</form>');
+    htp.br;
+    htp.br;
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    htp.p('</body>');
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</html>');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_wijzig_teamfoto(p_team_volgnr in varchar2,
+                                url           in varchar2,
+                                p_jaar        in varchar2) is
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    UPDATE ris_teams
+       SET foto = url
+     WHERE volgnr = to_number(p_team_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_teams.lineup?p_team_volgnr=' ||
+          p_team_volgnr || '&p_jaar=' || p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Wijzigen Teamfoto',
+                                  sqlcode,
+                                  sqlerrm,
+                                  'Teamnummer: ' || p_team_volgnr);
+    
+  end;
+  ------------------------------------------------------------------------------------
+end ris_pck_teams;

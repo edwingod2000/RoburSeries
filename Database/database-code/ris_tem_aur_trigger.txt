@@ -1,0 +1,43 @@
+create or replace trigger ris_tem_aur
+  after update on ris_teams  
+  for each row
+declare
+  v_n_jaar number(4) := ris_pck_alg.geef_syspar('JAAR_SERIES');
+
+begin
+  -- Een poulestand is bekend waardoor team in de kruiswedstrijden
+  -- of de mixwedstrijden bekend is
+  if :new.poulestand is not null then
+    -- Kruis wedstrijden
+    update ris_wedstrijden_kruis wed
+       set wed.thuis_team = :new.volgnr
+     where wed.poule_thuis = :new.poule and wed.poule_thuis_nr = :new.poulestand and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    update ris_wedstrijden_kruis wed
+       set wed.uit_team = :new.volgnr
+     where wed.poule_uit = :new.poule and wed.poule_uit_nr = :new.poulestand and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    -- Mix wedstrijden
+    update ris_wedstrijden_mix wed
+       set wed.thuis_team = :new.volgnr
+     where wed.poule_thuis = :new.poule and wed.poule_thuis_nr = :new.poulestand and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+    update ris_wedstrijden_mix wed
+       set wed.uit_team = :new.volgnr
+     where wed.poule_uit = :new.poule and wed.poule_uit_nr = :new.poulestand and
+           wed.soort = :new.soort and wed.jaar = v_n_jaar;
+  
+  end if;
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Trigger tem_aur'
+                                 ,sqlcode
+                                 ,sqlerrm
+                                 ,null);
+      commit;
+  
+end ris_tem_aur;

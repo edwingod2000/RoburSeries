@@ -1,0 +1,550 @@
+create or replace package body ris_pck_menu is
+  ------------------------------------------------------------------------------------
+  procedure startpagina(p_jaar in varchar2 default null) is
+    v_jaar varchar2(4) := null;
+  begin
+    if p_jaar is null then
+      v_jaar := ris_pck_alg.geef_syspar('JAAR_SERIES');
+    else
+      v_jaar := p_jaar;
+    end if;
+  
+    ris_pck_alg.header('FALSE'
+                      ,v_jaar);
+    htp.framesetopen(ccols => '20%,80%,0%');
+    --    htp.frame('/ris-doc/rismenu.html', 'MENU', cattributes => 'frameborder="no" framespacing="0" noresize scrolling="no"');
+    htp.frame('ris_pck_menu.menu?p_jaar=' || v_jaar
+             ,'MENU'
+             ,cattributes => 'frameborder="no" framespacing="0" noresize scrolling="no"');
+    htp.frame('ris_pck_menu.startscherm'
+             ,'MAIN'
+             ,cattributes => 'frameborder="no" framespacing="0" noresize scrolling="yes"');
+    htp.frame('ris_pck_menu.preloadimages'
+             ,'DUMMY'
+             ,cattributes => 'frameborder="no" framespacing="0" noresize scrolling="no"');
+    htp.framesetclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure beheer(p_jaar in varchar2 default null) is
+  
+    v_jaar varchar2(4) := null;
+  
+  begin
+    if p_jaar is null then
+      v_jaar := ris_pck_alg.geef_syspar('JAAR_SERIES');
+    else
+      v_jaar := p_jaar;
+    end if;
+    ris_pck_alg.header('true'
+                      ,v_jaar);
+    htp.bodyopen;
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Series Beheer Systeem</font>');
+    htp.p('<BR><BR><BR>');
+    htp.bodyclose;
+    ris_pck_alg.menu(v_jaar);
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure startscherm is
+  
+  begin
+    htp.htmlopen;
+    htp.p('
+  <script>
+    <!-- Begin
+      function right(e) {
+        if (navigator.appName == "Netscape" && (e.which == 3 || e.which == 2)) {
+          return false;
+        } else if (navigator.appName == "Microsoft Internet Explorer" && (event.button == 2 || event.button == 3)) {
+          alert("Sorry, you do not have permission to right click.");
+          return false;
+        }
+          return true;
+        }
+
+        document.onmousedown=right;
+        document.onmouseup=right;
+        if (document.layers) window.captureEvents(Event.MOUSEDOWN);
+        if (document.layers) window.captureEvents(Event.MOUSEUP);
+        window.onmousedown=right;
+        window.onmouseup=right;
+    // End -->
+  </script>
+');
+    htp.bodyopen;
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure preloadimages is
+  
+  begin
+    htp.br;
+    htp.img('/ris-img/spacer.gif');
+    htp.img('/ris-img/DeletedItems.gif');
+    htp.img('/ris-img/inbox.gif');
+    htp.img('/ris-img/login.gif');
+    htp.img('/ris-img/l_s_bbs.jpg');
+    htp.img('/ris-img/outbox.gif');
+    htp.img('/ris-img/register.gif');
+    htp.img('/ris-img/rismail_r1_c1.gif');
+    htp.img('/ris-img/rismail_r2_c1.gif');
+    htp.img('/ris-img/rismail_r2_c2.gif');
+    htp.img('/ris-img/rismail_r2_c2_f2.gif');
+    htp.img('/ris-img/rismail_r2_c2_f3.gif');
+    htp.img('/ris-img/rismail_r2_c3.gif');
+    htp.img('/ris-img/rismail_r3_c2.gif');
+    htp.img('/ris-img/rismail_r4_c2.gif');
+    htp.img('/ris-img/rismail_r4_c2_f2.gif');
+    htp.img('/ris-img/rismail_r4_c2_f3.gif');
+    htp.img('/ris-img/rismail_r5_c2.gif');
+    htp.img('/ris-img/rismenu_r1_c1.gif');
+    htp.img('/ris-img/rismenu_r2_c1.gif');
+    htp.img('/ris-img/rismenu_r2_c2.gif');
+    htp.img('/ris-img/rismenu_r2_c2_f2.gif');
+    htp.img('/ris-img/rismenu_r2_c2_f3.gif');
+    htp.img('/ris-img/rismenu_r2_c3.gif');
+    htp.img('/ris-img/rismenu_r3_c2.gif');
+    htp.img('/ris-img/rismenu_r3_c2_f2.gif');
+    htp.img('/ris-img/rismenu_r3_c2_f3.gif');
+    htp.img('/ris-img/rismenu_r4_c2.gif');
+    htp.img('/ris-img/rismenu_r4_c2_f2.gif');
+    htp.img('/ris-img/rismenu_r4_c2_f3.gif');
+    htp.img('/ris-img/rismenu_r5_c2.gif');
+    htp.img('/ris-img/rismenu_r5_c2_f2.gif');
+    htp.img('/ris-img/rismenu_r5_c2_f3.gif');
+    htp.img('/ris-img/rismenu_r6_c2.gif');
+    htp.img('/ris-img/rismenu_r6_c2_f2.gif');
+    htp.img('/ris-img/rismenu_r6_c2_f3.gif');
+    htp.img('/ris-img/rismenu_r7_c2.gif');
+    htp.img('/ris-img/rismenu_r8_c2.gif');
+    htp.img('/ris-img/rismenu_r8_c2_f2.gif');
+    htp.img('/ris-img/rismenu_r8_c2_f3.gif');
+    htp.img('/ris-img/rismenu_r9_c2.gif');
+    htp.img('/ris-img/send.gif');
+    htp.img('/ris-img/SendItems.gif');
+    htp.img('/ris-img/spacer.gif');
+    htp.img('/ris-img/toonbericht.gif');
+  end;
+  ------------------------------------------------------------------------------------  
+  procedure menu(p_jaar in varchar2 default null) is
+  
+  begin
+    htp.p('
+<html>
+<head>
+<title>Robur ' || '''' || '58 Base- and Softball Series</title>
+<meta http-equiv="Content-Type" content="text/html;">
+<!-- Fireworks 4.0  Dreamweaver 4.0 target.  Created Fri Jul 12 16:20:05 GMT+0200 (W. Europe Daylight Time) 2002-->
+  <script>
+    <!-- Begin
+      function right(e) {
+        if (navigator.appName == "Netscape" && (e.which == 3 || e.which == 2)) {
+          return false;
+        } else if (navigator.appName == "Microsoft Internet Explorer" && (event.button == 2 || event.button == 3)) {
+          alert("Sorry, you do not have permission to right click.");
+          return false;
+        }
+          return true;
+        }
+
+        document.onmousedown=right;
+        document.onmouseup=right;
+        if (document.layers) window.captureEvents(Event.MOUSEDOWN);
+        if (document.layers) window.captureEvents(Event.MOUSEUP);
+        window.onmousedown=right;
+        window.onmouseup=right;
+    // End -->
+  </script>
+
+<script language="JavaScript">
+<!--
+function MM_displayStatusMsg(msgStr)  { //v3.0
+	status=msgStr; document.MM_returnValue = true;
+}
+
+function MM_findObj(n, d) { //v3.0
+  var p,i,x;  if(!d) d=document; if((p=n.indexOf("?"))>0&&parent.frames.length) {
+    d=parent.frames[n.substring(p+1)].document; n=n.substring(0,p);}
+  if(!(x=d[n])&&d.all) x=d.all[n]; for (i=0;!x&&i<d.forms.length;i++) x=d.forms[i][n];
+  for(i=0;!x&&d.layers&&i<d.layers.length;i++) x=MM_findObj(n,d.layers[i].document); return x;
+}
+function MM_nbGroup(event, grpName) { //v3.0
+  var doc=document;
+  var i,img,nbArr,args=MM_nbGroup.arguments;
+  if (event == "init" && args.length > 2) {
+    if ((img = MM_findObj(args[2])) != null && !img.MM_init) {
+      img.MM_init = true; img.MM_up = args[3]; img.MM_dn = img.src;
+      if ((nbArr = doc[grpName]) == null) nbArr = doc[grpName] = new Array();
+      nbArr[nbArr.length] = img;
+      for (i=4; i < args.length-1; i+=2) if ((img = MM_findObj(args[i])) != null) {
+        if (!img.MM_up) img.MM_up = img.src;
+        img.src = img.MM_dn = args[i+1];
+        nbArr[nbArr.length] = img;
+    } }
+  } else if (event == "over") {
+    doc.MM_nbOver = nbArr = new Array();
+    for (i=1; i < args.length-1; i+=3) if ((img = MM_findObj(args[i])) != null) {
+      if (!img.MM_up) img.MM_up = img.src;
+      img.src = (img.MM_dn && args[i+2]) ? args[i+2] : args[i+1];
+      nbArr[nbArr.length] = img;
+    }
+  } else if (event == "out" ) {
+    for (i=0; i < doc.MM_nbOver.length; i++) {
+      img = doc.MM_nbOver[i]; img.src = (img.MM_dn) ? img.MM_dn : img.MM_up; }
+  } else if (event == "down") {
+    if ((nbArr = doc[grpName]) != null)
+      for (i=0; i < nbArr.length; i++) { img=nbArr[i]; img.src = img.MM_up; img.MM_dn = 0; }
+    doc[grpName] = nbArr = new Array();
+    for (i=2; i < args.length-1; i+=2) if ((img = MM_findObj(args[i])) != null) {
+      if (!img.MM_up) img.MM_up = img.src;
+      img.src = img.MM_dn = args[i+1];
+      nbArr[nbArr.length] = img;
+  } }
+}
+
+function MM_preloadImages() { //v3.0
+ var d=document; if(d.images){ if(!d.MM_p) d.MM_p=new Array();
+   var i,j=d.MM_p.length,a=MM_preloadImages.arguments; for(i=0; i<a.length; i++)
+   if (a[i].indexOf("#")!=0){ d.MM_p[j]=new Image; d.MM_p[j++].src=a[i];}}
+}
+
+//-->
+</script>
+</head>
+<body bgcolor="#ffffff" onLoad="MM_preloadImages(' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r2_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r2_c2_f3.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r4_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r4_c2_f3.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r6_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r6_c2_f3.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r8_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r8_c2_f3.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r10_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r10_c2_f3.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r12_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r12_c2_f3.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r14_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r14_c2_f3.gif' || '''' ||
+          ');">
+<table border="0" cellpadding="0" cellspacing="0" width="176">
+<!-- fwtable fwsrc="rismenu.png" fwbase="rismenu.gif" fwstyle="Dreamweaver" fwdocid = "742308039" fwnested="0" -->
+  <tr>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="16" height="1" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="141" height="1" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="19" height="1" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="1" border="0"></td>
+  </tr>
+
+  <tr>
+   <td colspan="3"><img name="rismenu_r1_c1" src="/ris-doc/rismenu-img/rismenu_r1_c1.gif" width="176" height="18" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="18" border="0"></td>
+  </tr>
+  <tr>
+   <td rowspan="14"><img name="rismenu_r2_c1" src="/ris-doc/rismenu-img/rismenu_r2_c1.gif" width="16" height="509" border="0"></td>
+   <td><a href="/pls/ris/ris_pck_schedule.schedule?p_taal=&p_jaar=' || p_jaar ||
+          '" target="MAIN" alt="Schedule" onMouseOut="MM_nbGroup(' || '''' || 'out' || '''' ||
+          ');"  onMouseOver="MM_displayStatusMsg(' || '''' || 'Schedule' || '''' ||
+          ');MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' || 'rismenu_r2_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r2_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r2_c2_f3.gif' || '''' ||
+          ',1);return document.MM_returnValue"  onClick="MM_nbGroup(' || '''' || 'down' || '''' || ',' || '''' ||
+          'navbar1' || '''' || ',' || '''' || 'rismenu_r2_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r2_c2_f3.gif' || '''' ||
+          ',1);" ><img name="rismenu_r2_c2" src="/ris-doc/rismenu-img/rismenu_r2_c2.gif" width="141" height="47" border="0"></a></td>
+   <td rowspan="14"><img name="rismenu_r2_c3" src="/ris-doc/rismenu-img/rismenu_r2_c3.gif" width="19" height="509" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="47" border="0"></td>
+  </tr>
+  <tr>
+   <td><img name="rismenu_r3_c2" src="/ris-doc/rismenu-img/rismenu_r3_c2.gif" width="141" height="9" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="9" border="0"></td>
+  </tr>
+  <tr>
+   <td><a href="/pls/ris/ris_pck_teams.teams_overzicht?p_taal=&p_jaar=' ||
+          p_jaar || '" target="MAIN" alt="Teams" onMouseOut="MM_nbGroup(' || '''' ||
+          'out' || '''' || ');"  onMouseOver="MM_displayStatusMsg(' || '''' || 'Teams' || '''' ||
+          ');MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' || 'rismenu_r4_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r4_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r4_c2_f3.gif' || '''' ||
+          ',1);return document.MM_returnValue"  onClick="MM_nbGroup(' || '''' || 'down' || '''' || ',' || '''' ||
+          'navbar1' || '''' || ',' || '''' || 'rismenu_r4_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r4_c2_f3.gif' || '''' ||
+          ',1);" ><img name="rismenu_r4_c2" src="/ris-doc/rismenu-img/rismenu_r4_c2.gif" width="141" height="47" border="0"></a></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="47" border="0"></td>
+  </tr>
+  <tr>
+   <td><img name="rismenu_r5_c2" src="/ris-doc/rismenu-img/rismenu_r5_c2.gif" width="141" height="10" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="10" border="0"></td>
+  </tr>
+  <tr>
+   <td><a href="/pls/ris/ris_pck_stand.stand?p_taal=&p_jaar=' || p_jaar ||
+          '" target="MAIN" alt="Ranking" onMouseOut="MM_nbGroup(' || '''' || 'out' || '''' ||
+          ');"  onMouseOver="MM_displayStatusMsg(' || '''' || 'Ranking' || '''' ||
+          ');MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' || 'rismenu_r6_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r6_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r6_c2_f3.gif' || '''' ||
+          ',1);return document.MM_returnValue"  onClick="MM_nbGroup(' || '''' || 'down' || '''' || ',' || '''' ||
+          'navbar1' || '''' || ',' || '''' || 'rismenu_r6_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r6_c2_f3.gif' || '''' ||
+          ',1);" ><img name="rismenu_r6_c2" src="/ris-doc/rismenu-img/rismenu_r6_c2.gif" width="141" height="47" border="0"></a></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="47" border="0"></td>
+  </tr>
+  <tr>
+   <td><img name="rismenu_r7_c2" src="/ris-doc/rismenu-img/rismenu_r7_c2.gif" width="141" height="8" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="8" border="0"></td>
+  </tr>
+  <tr>
+   <td><a href="/pls/ris/ris_pck_stats.stats?p_jaar=' || p_jaar ||
+          '" target="MAIN" onMouseOut="MM_nbGroup(' || '''' || 'out' || '''' ||
+          ');"  onMouseOver="MM_displayStatusMsg(' || '''' || 'Stats' || '''' ||
+          ');MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' || 'rismenu_r8_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r8_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r8_c2_f3.gif' || '''' ||
+          ',1);return document.MM_returnValue"  onClick="MM_nbGroup(' || '''' || 'down' || '''' || ',' || '''' ||
+          'navbar1' || '''' || ',' || '''' || 'rismenu_r8_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r8_c2_f3.gif' || '''' ||
+          ',1);" ><img name="rismenu_r8_c2" src="/ris-doc/rismenu-img/rismenu_r8_c2.gif" width="141" height="47" border="0" alt="Stats"></a></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="47" border="0"></td>
+  </tr>
+  <tr>
+   <td><img name="rismenu_r9_c2" src="/ris-doc/rismenu-img/rismenu_r9_c2.gif" width="141" height="9" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="9" border="0"></td>
+  </tr>
+  <tr>
+   <td><a href="/pls/ris/ris_pck_hoogtepunten.hoogtepunten_overzicht?p_jaar=' ||
+          p_jaar || '" target="MAIN" onMouseOut="MM_nbGroup(' || '''' || 'out' || '''' ||
+          ');"  onMouseOver="MM_displayStatusMsg(' || '''' || 'Highlights' || '''' ||
+          ');MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' || 'rismenu_r10_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r10_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r10_c2_f3.gif' || '''' ||
+          ',1);return document.MM_returnValue"  onClick="MM_nbGroup(' || '''' || 'down' || '''' || ',' || '''' ||
+          'navbar1' || '''' || ',' || '''' || 'rismenu_r10_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r10_c2_f3.gif' || '''' || ',1);" ><img name="rismenu_r10_c2" src="/ris-doc/rismenu-img/rismenu_r10_c2.gif" width="141" height="47" border="0" alt="Highlights"></a></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="47" border="0"></td>
+  </tr>
+  <tr>
+   <td><img name="rismenu_r11_c2" src="/ris-doc/rismenu-img/rismenu_r11_c2.gif" width="141" height="9" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="9" border="0"></td>
+  </tr>
+  ');
+    if ris_pck_alg.geef_syspar('INFO_PAGINA') is not null then
+      htp.p('<tr>');
+      htp.p('<td><a href="/ris-doc/' || p_jaar || '/' ||
+            ris_pck_alg.geef_syspar('INFO_PAGINA') ||
+            '" target="MAIN" onMouseOut="MM_nbGroup(' || '''' || 'out' || '''' ||
+            ');"  onMouseOver="MM_displayStatusMsg(' || '''' || 'info' || '''' ||
+            ');MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' || 'rismenu_r12_c2' || '''' || ',' || '''' ||
+            '/ris-doc/rismenu-img/rismenu_r12_c2_f2.gif' || '''' || ',' || '''' ||
+            '/ris-doc/rismenu-img/rismenu_r12_c2_f3.gif' || '''' ||
+            ',1);return document.MM_returnValue"  onClick="MM_nbGroup(' || '''' ||
+            'down' || '''' || ',' || '''' || 'navbar1' || '''' || ',' || '''' ||
+            'rismenu_r12_c2' || '''' || ',' || '''' ||
+            '/ris-doc/rismenu-img/rismenu_r12_c2_f3.gif' || '''' ||
+            ',1);" ><img name="rismenu_r12_c2" src="/ris-doc/rismenu-img/rismenu_r12_c2.gif" width="141" height="47" border="0" alt="Info"></a></td>');
+      htp.p('<td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="47" border="0"></td>');
+      htp.p('</tr>');
+    else
+      htp.p('<tr>');
+      htp.p('<td><img name="rismenu_r12_c2" src="/ris-doc/rismenu-img/rismenu_r12_c2.gif" width="141" height="47" border="0" alt="Info"></td>');
+      htp.p('<td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="47" border="0"></td>');
+      htp.p('</tr>');
+    end if;
+    htp.p('
+  <tr>
+   <td><img name="rismenu_r13_c2" src="/ris-doc/rismenu-img/rismenu_r13_c2.gif" width="141" height="9" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="9" border="0"></td>
+  </tr>
+  <tr>
+   <td><a href="/pls/ris/ris_pck_menu.mailmenu?p_taal=&p_jaar=' || p_jaar ||
+          '" target="_top" onMouseOut="MM_nbGroup(' || '''' || 'out' || '''' ||
+          ');"  onMouseOver="MM_displayStatusMsg(' || '''' || 'Mail' || '''' ||
+          ');MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' || 'rismenu_r14_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r14_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r14_c2_f3.gif' || '''' ||
+          ',1);return document.MM_returnValue"  onClick="MM_nbGroup(' || '''' || 'down' || '''' || ',' || '''' ||
+          'navbar1' || '''' || ',' || '''' || 'rismenu_r14_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismenu-img/rismenu_r14_c2_f3.gif' || '''' || ',1);" ><img name="rismenu_r14_c2" src="/ris-doc/rismenu-img/rismenu_r14_c2.gif" width="141" height="47" border="0" alt="Mail"></a></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="47" border="0"></td>
+  </tr>
+  <tr>
+   <td><img name="rismenu_r15_c2" src="/ris-doc/rismenu-img/rismenu_r15_c2.gif" width="141" height="126" border="0"></td>
+   <td><img src="/ris-doc/rismenu-img/spacer.gif" width="1" height="126" border="0"></td>
+  </tr>
+</table>
+</body>
+</html>
+
+');
+  end;
+  ------------------------------------------------------------------------------------
+  procedure mailmenu(p_taal in varchar2 default null
+                    ,p_jaar in varchar2 default null) is
+  
+  begin
+    htp.p('
+<html>
+<head>
+<title>Robur ' || '''' || '58 Base- and Softball Series</title>
+<meta http-equiv="Content-Type" content="text/html;">
+<!-- Fireworks 4.0  Dreamweaver 4.0 target.  Created Sat Jul 06 22:55:14 GMT+0200 (W. Europe Daylight Time) 2002-->
+  <script>
+    <!-- Begin
+      function right(e) {
+        if (navigator.appName == "Netscape" && (e.which == 3 || e.which == 2)) {
+          return false;
+        } else if (navigator.appName == "Microsoft Internet Explorer" && (event.button == 2 || event.button == 3)) {
+          alert("Sorry, you do not have permission to right click.");
+          return false;
+        }
+          return true;
+        }
+
+        document.onmousedown=right;
+        document.onmouseup=right;
+        if (document.layers) window.captureEvents(Event.MOUSEDOWN);
+        if (document.layers) window.captureEvents(Event.MOUSEUP);
+        window.onmousedown=right;
+        window.onmouseup=right;
+    // End -->
+  </script>
+
+<script language="JavaScript">
+<!--
+function MM_displayStatusMsg(msgStr)  { //v3.0
+	status=msgStr; document.MM_returnValue = true;
+}
+
+function MM_findObj(n, d) { //v3.0
+  var p,i,x;  if(!d) d=document; if((p=n.indexOf("?"))>0&&parent.frames.length) {
+    d=parent.frames[n.substring(p+1)].document; n=n.substring(0,p);}
+  if(!(x=d[n])&&d.all) x=d.all[n]; for (i=0;!x&&i<d.forms.length;i++) x=d.forms[i][n];
+  for(i=0;!x&&d.layers&&i<d.layers.length;i++) x=MM_findObj(n,d.layers[i].document); return x;
+}
+function MM_nbGroup(event, grpName) { //v3.0
+  var i,img,nbArr,args=MM_nbGroup.arguments;
+  if (event == "init" && args.length > 2) {
+    if ((img = MM_findObj(args[2])) != null && !img.MM_init) {
+      img.MM_init = true; img.MM_up = args[3]; img.MM_dn = img.src;
+      if ((nbArr = document[grpName]) == null) nbArr = document[grpName] = new Array();
+      nbArr[nbArr.length] = img;
+      for (i=4; i < args.length-1; i+=2) if ((img = MM_findObj(args[i])) != null) {
+        if (!img.MM_up) img.MM_up = img.src;
+        img.src = img.MM_dn = args[i+1];
+        nbArr[nbArr.length] = img;
+    } }
+  } else if (event == "over") {
+    document.MM_nbOver = nbArr = new Array();
+    for (i=1; i < args.length-1; i+=3) if ((img = MM_findObj(args[i])) != null) {
+      if (!img.MM_up) img.MM_up = img.src;
+      img.src = (img.MM_dn && args[i+2]) ? args[i+2] : args[i+1];
+      nbArr[nbArr.length] = img;
+    }
+  } else if (event == "out" ) {
+    for (i=0; i < document.MM_nbOver.length; i++) {
+      img = document.MM_nbOver[i]; img.src = (img.MM_dn) ? img.MM_dn : img.MM_up; }
+  } else if (event == "down") {
+    if ((nbArr = document[grpName]) != null)
+      for (i=0; i < nbArr.length; i++) { img=nbArr[i]; img.src = img.MM_up; img.MM_dn = 0; }
+    document[grpName] = nbArr = new Array();
+    for (i=2; i < args.length-1; i+=2) if ((img = MM_findObj(args[i])) != null) {
+      if (!img.MM_up) img.MM_up = img.src;
+      img.src = img.MM_dn = args[i+1];
+      nbArr[nbArr.length] = img;
+  } }
+}
+
+function MM_preloadImages() { //v3.0
+ var d=document; if(d.images){ if(!d.MM_p) d.MM_p=new Array();
+   var i,j=d.MM_p.length,a=MM_preloadImages.arguments; for(i=0; i<a.length; i++)
+   if (a[i].indexOf("#")!=0){ d.MM_p[j]=new Image; d.MM_p[j++].src=a[i];}}
+}
+
+//-->
+</script>
+</head>
+<body bgcolor="#ffffff" onLoad="MM_preloadImages(' || '''' ||
+          '/ris-doc/rismail-img/rismail_r2_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r2_c2_f3.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r4_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r4_c2_f3.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r6_c3_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r6_c3_f3.gif' || '''' ||
+          ');">
+<table border="0" cellpadding="0" cellspacing="0" width="314">
+<!-- fwtable fwsrc="mail.png" fwbase="rismail.gif" fwstyle="Dreamweaver" fwdocid = "742308039" fwnested="0" -->
+  <tr>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="16" height="1" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="26" height="1" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="94" height="1" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="78" height="1" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="100" height="1" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="1" height="1" border="0"></td>
+  </tr>
+
+  <tr>
+   <td colspan="5"><img name="rismail_r1_c1" src="/ris-doc/rismail-img/rismail_r1_c1.gif" width="314" height="79" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="1" height="79" border="0"></td>
+  </tr>
+  <tr>
+   <td rowspan="6"><img name="rismail_r2_c1" src="/ris-doc/rismail-img/rismail_r2_c1.gif" width="16" height="443" border="0"></td>
+   <td colspan="3"><a href="/pls/ris/ris_pck_mail.login?p_jaar=' || p_jaar ||
+          '" onMouseOut="MM_nbGroup(' || '''' || 'out' || '''' ||
+          ');"  onMouseOver="MM_displayStatusMsg(' || '''' || 'Login' || '''' ||
+          ');MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' || 'rismail_r2_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r2_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r2_c2_f3.gif' || '''' ||
+          ',1);return document.MM_returnValue"  onClick="MM_nbGroup(' || '''' || 'down' || '''' || ',' || '''' ||
+          'navbar1' || '''' || ',' || '''' || 'rismail_r2_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r2_c2_f3.gif' || '''' ||
+          ',1);" ><img name="rismail_r2_c2" src="/ris-doc/rismail-img/rismail_r2_c2.gif" width="198" height="50" border="0" alt="Login"></a></td>
+   <td rowspan="6"><img name="rismail_r2_c5" src="/ris-doc/rismail-img/rismail_r2_c5.gif" width="100" height="443" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="1" height="50" border="0"></td>
+  </tr>
+  <tr>
+   <td colspan="3"><img name="rismail_r3_c2" src="/ris-doc/rismail-img/rismail_r3_c2.gif" width="198" height="9" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="1" height="9" border="0"></td>
+  </tr>
+  <tr>
+   <td colspan="3"><a href="/pls/ris/ris_pck_mail.register?p_jaar=' || p_jaar ||
+          '" onMouseOut="MM_nbGroup(' || '''' || 'out' || '''' ||
+          ');"  onMouseOver="MM_displayStatusMsg(' || '''' || 'Register' || '''' ||
+          ');MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' || 'rismail_r4_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r4_c2_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r4_c2_f3.gif' || '''' ||
+          ',1);return document.MM_returnValue"  onClick="MM_nbGroup(' || '''' || 'down' || '''' || ',' || '''' ||
+          'navbar1' || '''' || ',' || '''' || 'rismail_r4_c2' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r4_c2_f3.gif' || '''' ||
+          ',1);" ><img name="rismail_r4_c2" src="/ris-doc/rismail-img/rismail_r4_c2.gif" width="198" height="50" border="0" alt="Register"></a></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="1" height="50" border="0"></td>
+  </tr>
+  <tr>
+   <td colspan="3"><img name="rismail_r5_c2" src="/ris-doc/rismail-img/rismail_r5_c2.gif" width="198" height="296" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="1" height="296" border="0"></td>
+  </tr>
+  <tr>
+   <td rowspan="2"><img name="rismail_r6_c2" src="/ris-doc/rismail-img/rismail_r6_c2.gif" width="26" height="38" border="0"></td>
+   <td><a href="/pls/ris/ris_pck_menu.startpagina?p_jaar=' || p_jaar ||
+          '" TARGET="_top" onMouseOut="MM_nbGroup(' || '''' || 'out' || '''' ||
+          ');"  onMouseOver="MM_nbGroup(' || '''' || 'over' || '''' || ',' || '''' ||
+          'rismail_r6_c3' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r6_c3_f2.gif' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r6_c3_f3.gif' || '''' ||
+          ',1);"  onClick="MM_nbGroup(' || '''' || 'down' || '''' || ',' || '''' ||
+          'navbar1' || '''' || ',' || '''' || 'rismail_r6_c3' || '''' || ',' || '''' ||
+          '/ris-doc/rismail-img/rismail_r6_c3_f3.gif' || '''' || ',1);" ><img name="rismail_r6_c3" src="/ris-doc/rismail-img/rismail_r6_c3.gif" width="94" height="27" border="0"></a></td>
+   <td rowspan="2"><img name="rismail_r6_c4" src="/ris-doc/rismail-img/rismail_r6_c4.gif" width="78" height="38" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="1" height="27" border="0"></td>
+  </tr>
+  <tr>
+   <td><img name="rismail_r7_c3" src="/ris-doc/rismail-img/rismail_r7_c3.gif" width="94" height="11" border="0"></td>
+   <td><img src="/ris-doc/rismail-img/spacer.gif" width="1" height="11" border="0"></td>
+  </tr>
+</table>
+</body>
+</html>
+');
+  end;
+
+end ris_pck_menu;

@@ -1,0 +1,7 @@
+create or replace trigger ris_wmx_aus
+  after update on ris_wedstrijden_mix
+  
+begin
+  /* Re-process the updated records. There is no restriction here. */
+  ris_pck_wmx_trg.verwerk_table;
+end ris_wmx_aus;

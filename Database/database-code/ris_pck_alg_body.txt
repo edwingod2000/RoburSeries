@@ -1,0 +1,1362 @@
+CREATE OR REPLACE Package Body ris_pck_alg Is
+  --------------------------------------------------------------------------------
+  --
+  --  Package ris_pck_alg
+  --
+  --
+  --  Author: Edwin Godefrooij
+  --  Date:   28 Oktober 2001
+  --
+  --------------------------------------------------------------------------------
+
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure stylesheet
+  --
+  --
+  --  Author: Edwin Godefrooij
+  --  Date:   28 Oktober 2001
+  --
+  --------------------------------------------------------------------------------
+  Procedure stylesheet Is
+  
+  Begin
+    --  htp.p ('<link href="/ris-style/style_main.css" rel="STYLESHEET" type="text/css">');
+    htp.p('<style>
+          .noborder   {  border: 0px; border-style: none }
+          .even        { background-color: #EFEFEF }
+          .oneven     {  background-color: #99FF99 }
+          .headlink   {  font-family: Arial, Helvetica, sans-serif; font-size: small; font-style: normal; color: #000000; background-color: ##CC0000 }
+          .infotable  {  border: #CC0000; border-style: solid; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px }
+          .tableddata {  vertical-align: top; margin: 0pt; padding: 5px; font-size: x-small }
+          .tableheader {  color: #CC0000; background-color: ##CC0000; padding: 5px }
+          table.tabHeader {
+            BORDER-RIGHT: RED 1px solid; padding-left: 5mm; BORDER-TOP: RED 1px solid; BORDER-LEFT: RED 1px solid; BORDER-BOTTOM: RED 1px solid; BACKGROUND-COLOR: #ffffff; border-spacing: 0
+          }
+          table.website  {  border: #666666; border-style: solid; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px }
+          span.contentHeaderRed {
+            FONT-WEIGHT: bold; FONT-SIZE: 16px; FONT-FAMILY: Arial; COLOR: #FFFFFF
+          }
+          body        {  font-family: Arial, Helvetica, sans-serif; font-size: small; font-style: normal; color: #000000 }
+          th          {  color: white; background-color: #CC0000; text-align: left; padding: 5px }
+          a           {  font-family: Arial, Helvetica, sans-serif; font-size: small; font-style: normal; color: #000000; background-color: #FFFFFF }
+          h1          {  font-family: Arial, Helvetica, sans-serif; font-size: normal }
+          h2          {  font-family: Arial, Helvetica, sans-serif; font-size: small }
+
+        </style>');
+  End;
+
+  Function stylesheet Return varchar2 Is
+  
+  Begin
+    Return('<link href="/ris-style/style_main.css" rel="STYLESHEET" type="text/css">');
+  End;
+
+  --------------------------------------------------------------------------------
+  function genereerSessionId(p_s_gbr_volgnr in varchar2) return varchar2 is
+  
+    v_s_session_id    varchar2(100) := null;
+    v_d_huidige_datum date := null;
+  
+    Cursor c_huidige_datum is
+      select sysdate from dual;
+  
+  begin
+    open c_huidige_datum;
+    fetch c_huidige_datum
+      Into v_d_huidige_datum;
+    close c_huidige_datum;
+  
+    v_s_session_id := to_char(v_d_huidige_datum, 'YYYYMMDDHH24MISS') ||
+                      p_s_gbr_volgnr;
+  
+    update ris_gebruikers gbr
+       set gbr.session_id = v_s_session_id
+     where gbr.volgnr = to_number(p_s_gbr_volgnr);
+  
+    commit;
+  
+    return v_s_session_id;
+  end;
+  --------------------------------------------------------------------------------
+  function controleSessionId(p_s_gbr_volgnr in varchar2,
+                             p_s_session_id in varchar2) return boolean is
+  
+    v_b_result boolean := false;
+    v_s_dummy  varchar2(1) := null;
+  
+    Cursor c_gebruiker is
+      select 'x'
+        from ris_gebruikers
+       where volgnr = to_number(p_s_gbr_volgnr)
+         and session_id = p_s_session_id;
+  
+  begin
+    open c_gebruiker;
+    fetch c_gebruiker
+      into v_s_dummy;
+    if c_gebruiker%NotFound then
+      v_b_result := false;
+      htp.htmlopen;
+      htp.bodyopen;
+      htp.p('<script>
+               parent.document.location.href="/ris-doc/rismail.html"; 
+           </script>
+          ');
+      htp.htmlclose;
+    
+    else
+      v_b_result := true;
+    end if;
+    close c_gebruiker;
+  
+    return v_b_result;
+  end;
+  --------------------------------------------------------------------------------
+
+  --
+  --  Procedure norightclick
+  --
+  --
+  --  Author: Edwin Godefrooij
+  --  Date:   10 mei 2002
+  --
+  --------------------------------------------------------------------------------
+  procedure norightclick is
+  
+  begin
+/*    htp.p(' <script>
+            <!-- Begin
+            function right(e) {
+              if (navigator.appName == "Netscape" &&(e.which == 3 || e.which == 2)) {
+                return false;
+              } else if (navigator.appName == "Microsoft Internet Explorer" &&(event.button == 2 || event.button == 3)) {
+                alert("Sorry, you do not have permission to right click.");
+                return false;
+              }
+              return true;
+            }
+            
+            document.onmousedown=right;
+            document.onmouseup=right;
+            if (document.layers) window.captureEvents(Event.MOUSEDOWN);
+            if (document.layers) window.captureEvents(Event.MOUSEUP);
+            window.onmousedown=right;
+            window.onmouseup=right;
+            // End -->
+          </script>
+        '); */
+    null;
+  end;
+
+  procedure submitenter is
+  
+  begin
+    htp.p('
+<SCRIPT TYPE="text/javascript">
+<!--
+function submitenter(myfield,e)
+{
+var keycode;
+if (window.event) keycode = window.event.keyCode;
+else if (e) keycode = e.which;
+else return true;
+
+if (keycode == 13)
+   {
+   myfield.form.submit();
+   return false;
+   }
+else
+   return true;
+}
+//-->
+</SCRIPT>
+
+   
+   ');
+  end;
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure titel
+  --
+  --
+  --  Author: Edwin Godefrooij / Roccade Public - SD
+  --  Date:   8 Maart 1999
+  --
+  --------------------------------------------------------------------------------
+
+  --------------------------------------------------------------------------------
+  --
+  --  Function geef_current_user
+  --
+  --
+  --  Author: Edwin Godefrooij / Roccade Public - SD
+  --  Date:   8 Maart 1999
+  --
+  --------------------------------------------------------------------------------
+  Function geef_current_user Return Varchar2 Is
+  
+    v_s_current_user Varchar2(50) := Null;
+  
+    Cursor c_current_user Is
+      Select user From dual;
+  
+  Begin
+    Open c_current_user;
+    Fetch c_current_user
+      Into v_s_current_user;
+    Close c_current_user;
+  
+    Return(v_s_current_user);
+  End;
+
+  --------------------------------------------------------------------------------
+  --
+  --  Function geef_gebruiker_nummer
+  --
+  --
+  --  Author: Edwin Godefrooij / Roccade Public - SD
+  --  Date:   29 Maart 1999
+  --
+  --------------------------------------------------------------------------------
+  Function geef_gebruiker_nummer Return Number Is
+  
+    v_s_gebruiker      Varchar2(100) := Null;
+    v_n_gbr_volgnummer ris_gebruikers.volgnr%TYPE := Null;
+  
+    Cursor c_current_user Is
+      Select user From dual;
+  
+    Cursor c_bepaal_gbr_volgnummer Is
+      Select volgnr
+        From ris_gebruikers
+       Where Upper(loginid) = Upper(v_s_gebruiker);
+  
+  Begin
+    Open c_current_user;
+    Fetch c_current_user
+      Into v_s_gebruiker;
+    Close c_current_user;
+  
+    Open c_bepaal_gbr_volgnummer;
+    Fetch c_bepaal_gbr_volgnummer
+      Into v_n_gbr_volgnummer;
+    If c_bepaal_gbr_volgnummer%Notfound Then
+      v_n_gbr_volgnummer := 0;
+    End If;
+    Close c_bepaal_gbr_volgnummer;
+  
+    Return(v_n_gbr_volgnummer);
+  End;
+  --------------------------------------------------------------------------------
+  --
+  --  Function bepaal_gebruiker_naam
+  --
+  --
+  --  Author: Edwin Godefrooij / Roccade Public - SD
+  --  Date:   29 Maart 1999
+  --
+  --------------------------------------------------------------------------------
+  Function bepaal_gebruiker_naam(p_n_gbr_volgnummer In Number)
+    Return Varchar2 Is
+  
+    v_s_gebruiker Varchar2(200) := Null;
+  
+    Cursor c_bepaal_naam Is
+      Select Nvl(voornaam, Null) || ' ' || Nvl(tussenvoegsel, null) || ' ' ||
+             Nvl(achternaam, Null)
+        From ris_gebruikers
+       Where volgnr = p_n_gbr_volgnummer;
+  
+  Begin
+    Open c_bepaal_naam;
+    Fetch c_bepaal_naam
+      Into v_s_gebruiker;
+    Close c_bepaal_naam;
+  
+    Return(v_s_gebruiker);
+  End;
+  --------------------------------------------------------------------------------
+  Function geef_syspar(p_code in ris_sysvar.code%type) Return Varchar2 Is
+    --------------------------------------------------------------------------------
+    --
+    --  Function geef_syspar
+    --
+    --
+    --  Author: Lieuwe van Brug / Roccade Public - SD
+    --  Date:   12 april 1999
+    --
+    --------------------------------------------------------------------------------
+    v_s_waarde ris_sysvar.waarde%type := Null;
+  
+    Cursor c_sysvar Is
+      Select waarde From ris_sysvar Where code = upper(p_code);
+  
+  Begin
+  
+    Open c_sysvar;
+    Fetch c_sysvar
+      Into v_s_waarde;
+    Close c_sysvar;
+  
+    Return(v_s_waarde);
+  
+  End;
+  --------------------------------------------------------------------------------
+  procedure exec_ddl(p_string in varchar2) is
+    --------------------------------------------------------------------------------
+    --
+    --  Function exec_ddl
+    --
+    --
+    --  Author: Lieuwe van Brug / Roccade Public - SD
+    --  Date:   20 mei 1999
+    --
+    --------------------------------------------------------------------------------
+    v_cursor_name integer;
+    v_ret         integer;
+  
+  begin
+    -- exec_ddl
+    v_cursor_name := dbms_sql.open_cursor;
+    dbms_sql.parse(v_cursor_name, p_string, dbms_sql.native);
+    v_ret := sys.dbms_sql.execute(v_cursor_name);
+    dbms_sql.close_cursor(v_cursor_name);
+  exception
+    when others then
+      dbms_sql.close_cursor(v_cursor_name);
+  end; -- exec_ddl
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure titel
+  --
+  --
+  --  Author: E. Godefrooij
+  --  Date:   20 mei 1999
+  --
+  --------------------------------------------------------------------------------
+  Procedure titel Is
+  
+  Begin
+    htp.title('Robur ' || '''' || '58 Info System');
+  End;
+
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure nog_niet
+  --
+  --
+  --  Author: Lieuwe van Brug / Roccade Public - SD
+  --  Date:   20 mei 1999
+  --
+  --------------------------------------------------------------------------------
+  Procedure nog_niet Is
+  
+  Begin
+    htp.htmlOpen;
+    htp.headOpen;
+    titel;
+    stylesheet;
+    htp.headClose;
+    htp.bodyOpen;
+    htp.header(1, 'Deze module is nog niet geimplementeerd.');
+    htp.bodyClose;
+    htp.htmlClose;
+  End;
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure sd_koptekst
+  --
+  --
+  --  Author: Edwin Godefrooij
+  --  Date:   28 Oktober 2001
+  --
+  --------------------------------------------------------------------------------
+  Procedure koptekst Is
+  
+  Begin
+    htp.htmlOpen;
+    htp.headOpen;
+    stylesheet;
+    htp.headClose;
+    htp.bodyOpen;
+    htp.tableOpen;
+    htp.tableRowOpen;
+    htp.tableData(htf.img('/bsm-img/homeplat.gif'),
+                  cattributes => 'WIDTH="600"');
+  
+    htp.tableData(htf.br || '<H1>Robur ' || '''' ||
+                  '58 Beheersysteem</H1>');
+  
+    htp.tableRowClose;
+    htp.tableClose;
+    htp.bodyClose;
+    htp.htmlClose;
+  End;
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure voettekst
+  --
+  --
+  --  Author: Edwin Godefrooij
+  --  Date:   28 Oktober 2001
+  --
+  --------------------------------------------------------------------------------
+  Procedure voettekst Is
+  
+  Begin
+    htp.htmlOpen;
+    htp.headOpen;
+    stylesheet;
+    htp.headClose;
+    htp.bodyOpen;
+  
+    Htp.Print('&copy Copyright by Robur ' || '''' || '58');
+    Htp.Bodyclose;
+    Htp.Htmlclose;
+  End;
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure melding
+  --
+  --
+  --  Author: Edwin Godefrooij
+  --  Date:   28 Oktober 2001
+  --
+  --------------------------------------------------------------------------------
+  procedure melding(p_s_melding in varchar2 default null) is
+  
+  begin
+    htp.htmlopen;
+    htp.headopen;
+    --  stylesheet;
+    htp.p('
+		<meta http-equiv="content-type" content="text/html;charset=iso-8859-1">
+		<meta name="generator" content="Adobe GoLive 4">
+		<title>The Homeplate of Robur58 has moved</title>
+		<meta http-equiv="refresh" content="10;URL=http://' ||
+          geef_syspar('NAME_WEBSERVER') || geef_syspar('URL_WEB_AGENT') ||
+          'bsm_pck_menu.menu">
+       ');
+    htp.headclose;
+    htp.bodyopen(cattributes => 'bgcolor="RED"');
+    if p_s_melding is not null then
+      htp.p('<B>Resultaat:</B><BR>');
+      htp.p('<SMALL>' || p_s_melding || '</SMALL>');
+    end if;
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  -------------------------------------------------------------------------------
+  procedure custom_js is
+  
+    v_n_mnu_volgnr     number := null;
+    v_n_aantal_submenu number := 0;
+  
+    cursor v_c_hoofdmenu is
+      select mnu.*
+        from ris_menu mnu
+       where mnu.nivo = 1
+         and mnu.toon_volgnr is not null
+       order by mnu.toon_volgnr;
+  
+    cursor v_c_submenu is
+      select mnu.*
+        from ris_menu mnu
+       where mnu.nivo = 2
+         and mnu.parent = v_n_mnu_volgnr
+         and mnu.toon_volgnr is not null
+       order by mnu.toon_volgnr;
+  
+  begin
+    htp.p(' <script language="javascript1.2"> ');
+    htp.p('   //UDMv3.4.1 ');
+    htp.p('   //**DO NOT EDIT THIS ***** ');
+    htp.p('   if (!exclude) { //******** ');
+    htp.p('//************************ ');
+  
+    htp.p('
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    //  ULTIMATE DROPDOWN MENU VERSION 3.5 by Brothercake
+    //  http://www.brothercake.com/dropdown/ 
+    //
+    //  Link-wrapping routine by Brendan Armstrong
+    //  KDE modifications by David Joham
+    //  Opera reload/resize routine by Michael Wallner
+    //  http://www.wallner-software.com/
+    //
+    //  This script featured on Dynamic Drive (http://www.dynamicdrive.com)
+    ///////////////////////////////////////////////////////////////////////////
+
+    // *** POSITIONING AND STYLES *********************************************
+
+var menuALIGN = "left";		// alignment
+var absLEFT = 	0;		// absolute left or right position (if menu is left or right aligned)
+var absTOP = 	84; 		// absolute top position
+
+var staticMENU = false;		// static positioning mode (ie5,ie6 and ns4 only)
+
+var stretchMENU = true;		// show empty cells
+var showBORDERS = true;		// show empty cell borders
+
+var baseHREF = "' ||
+          ris_pck_alg.geef_syspar('DIR_HOR_BEHEERMENU') || '";		// base path to .js files for the script (ie: resources/)
+var zORDER = 	1000;		// base z-order of nav structure (not ns4)
+
+// orgineel: var mCOLOR = 	"lightblue";	// main nav cell color
+var mCOLOR = 	"gray";	// main nav cell color
+// orgineel: var rCOLOR = 	"lightgreen";	// main nav cell rollover color
+var rCOLOR = 	"red";	// main nav cell rollover color
+var bSIZE = 	1;		// main nav border size
+var bCOLOR = 	"black"		// main nav border color
+// orgineel: var aLINK = 	"brown";	// main nav link color
+var aLINK = 	"white";	// main nav link color
+var aHOVER = 	"";		// main nav link hover-color (dual purpose)
+var aDEC = 	"none";		// main nav link decoration
+var fFONT = 	"arial";	// main nav font face
+var fSIZE = 	13;		// main nav font size (pixels)
+var fWEIGHT = 	"bold"		// main nav font weight
+var tINDENT = 	7;		// main nav text indent (if text is left or right aligned)
+var vPADDING = 	7;		// main nav vertical cell padding
+var vtOFFSET = 	0;		// main nav vertical text offset (+/- pixels from middle)
+
+var keepLIT =	true;		// keep rollover color when browsing menu
+var vOFFSET = 	5;		// shift the submenus vertically
+var hOFFSET = 	4;		// shift the submenus horizontally
+
+// orgineel: var smCOLOR = 	"lightblue";	// submenu cell color
+var smCOLOR = 	"gray";	// submenu cell color
+
+// orgineel: var srCOLOR = 	"lightgreen";	// submenu cell rollover color
+var srCOLOR = 	"red";	// submenu cell rollover color
+var sbSIZE = 	1;		// submenu border size
+var sbCOLOR = 	"black"		// submenu border color
+// orgineel: var saLINK = 	"black";	// submenu link color
+var saLINK = 	"white";	// submenu link color
+var saHOVER = 	"";		// submenu link hover-color (dual purpose)
+var saDEC = 	"none";		// submenu link decoration
+// orgineel: var sfFONT = 	"comic sans ms,arial";// submenu font face
+var sfFONT = 	"arial";// submenu font face
+var sfSIZE = 	13;		// submenu font size (pixels)
+// orgineel: var sfWEIGHT = 	"normal"	// submenu font weight
+var sfWEIGHT = 	"bold"	// submenu font weight
+var stINDENT = 	5;		// submenu text indent (if text is left or right aligned)
+var svPADDING = 1;		// submenu vertical cell padding
+var svtOFFSET = 0;		// submenu vertical text offset (+/- pixels from middle)
+
+var shSIZE =	2;		// submenu drop shadow size
+var shCOLOR =	"cccccc";	// submenu drop shadow color
+var shOPACITY = 75;		// submenu drop shadow opacity (not ie4,ns4 or opera)
+
+var keepSubLIT = true;		// keep submenu rollover color when browsing child menu
+var chvOFFSET = -12;		// shift the child menus vertically
+var chhOFFSET = 7;		// shift the child menus horizontally
+
+var closeTIMER = 330;		// menu closing delay time
+
+var cellCLICK = true;		// links activate on TD click
+var aCURSOR = "hand";		// cursor for active links (not ns4 or opera)
+
+var altDISPLAY = "";		// where to display alt text
+var allowRESIZE = true;		// allow resize/reload
+
+var redGRID = false;		// show a red grid
+var gridWIDTH = 0;		// override grid width
+var gridHEIGHT = 0;		// override grid height
+var documentWIDTH = 0;		// override document width
+
+var hideSELECT = true;		// auto-hide select boxes when menus open (ie only)
+var allowForSCALING = false;	// allow for text scaling in mozilla 5
+    ');
+  
+    htp.p('//** LINKS ***********************************************************');
+    for v_r_hoofdmenu in v_c_hoofdmenu loop
+      v_n_aantal_submenu := 0;
+      v_n_mnu_volgnr     := v_r_hoofdmenu.mnu_volgnr;
+    
+      -- add main link item ("url","Link name",width,"text-alignment","_target","alt text",top position,left position,"key trigger")
+      htp.p('addMainItem("' || v_r_hoofdmenu.url || '","' ||
+            v_r_hoofdmenu.omschrijving || '",' || v_r_hoofdmenu.width ||
+            ',"center","","",0,0,"");');
+    
+      for v_r_submenu in v_c_submenu loop
+      
+        if v_n_aantal_submenu = 0 then
+          -- define submenu properties (width,"align to edge","text-alignment",v offset,h offset,"filter")
+          htp.p('defineSubmenuProperties(' || v_r_submenu.width ||
+                ',"left","left",-4,0,"");');
+        end if;
+      
+        v_n_aantal_submenu := v_n_aantal_submenu + 1;
+      
+        -- add submenu link items ("url","Link name","_target","alt text")
+        htp.p('	addSubmenuItem("' || v_r_submenu.url || '","' ||
+              v_r_submenu.omschrijving || '","' || v_r_submenu.target ||
+              '","");');
+      end loop;
+    end loop;
+    htp.p('  //**DO NOT EDIT THIS ***** ');
+    htp.p(' }//*********************** ');
+    htp.p('  //************************ ');
+    htp.p('  </script> ');
+    /* einde code */
+  end;
+  -------------------------------------------------------------------------------  
+  procedure menu_js(p_locatie in varchar2 default null,
+                    p_jaar    in varchar2 default null) is
+  
+    v_s_locatie varchar2(100) := null;
+  
+  begin
+    if p_locatie is null then
+      v_s_locatie := 'document';
+    else
+      v_s_locatie := p_locatie;
+    end if;
+  
+    htp.p('<script>
+             function wed_all() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=ALL&p_jaar=' ||
+          p_jaar || '";
+             }
+             function wed_honkbal() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=HB&p_jaar=' ||
+          p_jaar || '";
+             }
+             function wed_softbal() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=SB&p_jaar=' ||
+          p_jaar || '";
+             }
+             function wed_mini() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=MINI&p_jaar=' ||
+          p_jaar || '";
+             }
+             function wed_minihb() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=MINIHB&p_jaar=' ||
+          p_jaar || '";
+             }
+             function wed_minisb() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=MINISB&p_jaar=' ||
+          p_jaar || '";
+             }
+             function wed_demosb() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=DEMOSB&p_jaar=' ||
+          p_jaar || '";
+             }
+             function wed_demohb() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=DEMOHB&p_jaar=' ||
+          p_jaar || '";
+             }
+             function wed_demominihb() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=DEMOMINIHB&p_jaar=' ||
+          p_jaar || '";
+             }
+             function wed_demominisb() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wedstrijden_overzicht?p_team_volgnr=DEMOMINISB&p_jaar=' ||
+          p_jaar || '";
+             }
+             function teams() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_teams.wijzig_teams?p_jaar=' || p_jaar || '";
+             }
+             function instellingen() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_alg.instellingen?p_jaar=' || p_jaar || '";
+             }
+             function gebruikers() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_gebruikers.gebruikersbeheer?p_jaar=' ||
+          p_jaar || '";
+             }
+             function toon_status() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_status.toon_status?p_jaar=' || p_jaar || '";
+             }
+             function hoogtepunten() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_hoogtepunten.wijzig_hoogtepunten?p_jaar=' ||
+          p_jaar || '";
+             }
+             function soortjaar() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_stats.wijzig_soortjaar?p_jaar=' ||
+          p_jaar || '";
+             }
+             function rapporten() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_report.startpagina?p_jaar=' || p_jaar || '";
+             }
+             function krant() {
+               ' || v_s_locatie ||
+          '.location.href="ris_pck_krant.wijzig_krant?p_jaar=' || p_jaar || '";
+             }
+             </script>
+    ');
+  end;
+  -------------------------------------------------------------------------------  
+  Procedure header(p_beheer in varchar2, p_jaar in varchar2 default null) is
+  
+  begin
+    htp.p('<html>');
+  
+    htp.p('<head>');
+    htp.p('<title>Robur ' || '''' ||
+          '58 Base- and Softball Series</title>');
+    if upper(p_beheer) = 'TRUE' then
+      htp.p(' <script language="javascript" src="' ||
+            ris_pck_alg.geef_syspar('DIR_HOR_BEHEERMENU') ||
+            'sniffer.js"></script>');
+      custom_js;
+      htp.p(' <script language="javascript1.2" src="' ||
+            ris_pck_alg.geef_syspar('DIR_HOR_BEHEERMENU') ||
+            'style.js"></script>');
+      menu_js(p_jaar => p_jaar);
+    else
+      norightclick;
+    end if;
+    stylesheet;
+    htp.p('</head>');
+  end;
+  -------------------------------------------------------------------------------
+  procedure foutafhandeling(p_onderdeel   in varchar2,
+                            p_sqlcode     in varchar2,
+                            p_sqlerrmsg   in varchar2,
+                            p_additioneel in varchar2) is
+  
+  begin
+    insert into ris_errorlog
+      (datum, onderdeel, sql_code, sql_errmsg, additioneel)
+    values
+      (sysdate, p_onderdeel, p_sqlcode, p_sqlerrmsg, p_additioneel);
+    commit;
+  end;
+  -------------------------------------------------------------------------------
+  procedure instellingen(p_jaar in varchar2 default null) is
+  
+    cursor c_sysvar is
+      SELECT code, waarde, omschrijving FROM ris_sysvar;
+  
+    cursor c_jaar_settings is
+      SELECT jss.stats_intern
+           , jss.stats_externe_url
+           , jss.teamfotolocatie_intern
+           , jss.teamfotolocatie_url
+        FROM ris_jaar_settings jss
+      WHERE jss.jaar = to_number(p_jaar);
+
+  begin
+    ris_pck_alg.header('true', p_jaar);
+    htp.p('<body>');
+    htp.p('<FORM NAME="f_variabele" ACTION="ris_pck_alg.bewaar_instellingen" METHOD=POST>');
+    htp.formhidden('p_jaar', p_jaar);
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Instellingen</font>');
+    htp.p('<BR><BR><BR>');
+    htp.p('<script>
+              function bewaar() {
+                document.f_variabele.submit();
+              }
+            </script> ');
+  
+    htp.p('<table class="infotable" cellspacing="0" cellpadding="0" width="700">');
+  
+    for r_sysvar in c_sysvar loop
+      if r_sysvar.code = 'PERSOONLIJKE_PRIJZEN_PAGINA' then
+        /*################################
+        # code = PERSOONLIJKE_PRIJZEN_PAGINA #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_persoonlijke_prijzen_pagina',
+                           50,
+                           100,
+                           r_sysvar.waarde) || '</TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'WINNENDE_TEAMS_PAGINA' then
+        /*################################
+        # code = WINNENDE_TEAMS_PAGINA #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_winnende_teams_pagina',
+                           50,
+                           100,
+                           r_sysvar.waarde) || '</TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'INFO_PAGINA' then
+        /*################################
+        # code = INFO_PAGINA #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_info_pagina', 50, 100, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+    
+      if r_sysvar.code = 'SEND_TIME' then
+        --##################################
+        --# code = SEND_TIME #
+        --##################################
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP><img src="' ||
+              ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH>');
+        htp.p('<TH align="LEFT" valign=TOP width="200">' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP width="200">' ||
+              htf.formtext('p_send_time', 20, 20, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+    
+      if r_sysvar.code = 'SYNC_TIME' then
+        --##################################
+        --# code = SYNC_TIME #
+        --##################################
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_sync_time', 20, 20, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'DIR_IMAGES' then
+        /*#########################
+        # code = DIR_IMAGES #
+        ######################### */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_dir_images', 50, 100, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'REFESH_KABELKRANT' then
+        /*################################
+        # code = REFESH_KABELKRANT #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_refresh_kabelkrant', 10, 10, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'WEDSTRIJDSCHEMA_DEFINITIEF' then
+        /*################################
+        # code = WEDSTRIJDSCHEMA_DEFINITIEF #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' || '<select name="p_wedstrijden_definitief">');
+        if r_sysvar.waarde = 'true' then
+          htp.p('<option selected value="true">Ja</option>');
+          htp.p('<option value="false">Nee</option>');
+        else
+          htp.p('<option value="true">Ja</option>');
+          htp.p('<option selected value="false">Nee</option>');
+        end if;
+        htp.p('</select></TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'REFRESH_RAPPORTEN' then
+        /*################################
+        # code = REFRESH_RAPPORTEN #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_refresh_rapporten', 10, 10, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'JAAR_SERIES' then
+        /*################################
+        # code = JAAR_SERIES #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_jaar_series', 10, 10, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+      
+      if r_sysvar.code = 'TOON_HUIDIG_TOERNOOI_MENU' then
+        /*################################
+        # code = TOON_HUIDIG_TOERNOOI_MENU #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' || '<select name="p_toon_huidig_toernooi_menu">');
+        if r_sysvar.waarde = 'true' then
+          htp.p('<option selected value="true">Ja</option>');
+          htp.p('<option value="false">Nee</option>');
+        else
+          htp.p('<option value="true">Ja</option>');
+          htp.p('<option selected value="false">Nee</option>');
+        end if;
+        htp.p('</select></TD>');
+        htp.p('</TR>');
+      end if;
+
+      if r_sysvar.code = 'PUNTEN_VERLOREN' then
+        /*################################
+        # code = PUNTEN_VERLOREN #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_punten_verloren', 5, 10, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'PUNTEN_GELIJK' then
+        /*################################
+        # code = PUNTEN_GELIJK #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_punten_gelijk', 5, 10, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'PUNTEN_GEWONNEN' then
+        /*################################
+        # code = PUNTEN_GEWONNEN #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP>' ||
+              htf.formtext('p_punten_gewonnen', 5, 10, r_sysvar.waarde) ||
+              '</TD>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'WEDSTRIJD_SORTERING_BEHEER1' then
+        /*################################
+        # code = WEDSTRIJD_SORTERING_BEHEER1 #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP><select name="p_wed_sort_beheer1">');
+        if r_sysvar.waarde = 'soort' then
+          htp.p('<option selected value="soort">Soort</option>');
+        else
+          htp.p('<option value="soort">Soort</option>');
+        end if;
+        if r_sysvar.waarde = 'poule' then
+          htp.p('<option selected value="poule">Poule</option>');
+        else
+          htp.p('<option value="poule">Poule</option>');
+        end if;
+        if r_sysvar.waarde = 'datum' then
+          htp.p('<option selected value="datum">Datum</option>');
+        else
+          htp.p('<option value="datum">Datum</option>');
+        end if;
+        if r_sysvar.waarde = 'tijdstip' then
+          htp.p('<option selected value="tijdstip">Tijd</option>');
+        else
+          htp.p('<option value="tijdstip">Tijd</option>');
+        end if;
+        if r_sysvar.waarde = 'wedstrijd_nummer' then
+          htp.p('<option selected value="wedstrijd_nummer">Nummer</option>');
+        else
+          htp.p('<option value="wedstrijd_nummer">Nummer</option>');
+        end if;
+        htp.p('</select>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'WEDSTRIJD_SORTERING_BEHEER2' then
+        /*################################
+        # code = WEDSTRIJD_SORTERING_BEHEER2 #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP><select name="p_wed_sort_beheer2">');
+        if r_sysvar.waarde = 'soort' then
+          htp.p('<option selected value="soort">Soort</option>');
+        else
+          htp.p('<option value="soort">Soort</option>');
+        end if;
+        if r_sysvar.waarde = 'poule' then
+          htp.p('<option selected value="poule">Poule</option>');
+        else
+          htp.p('<option value="poule">Poule</option>');
+        end if;
+        if r_sysvar.waarde = 'datum' then
+          htp.p('<option selected value="datum">Datum</option>');
+        else
+          htp.p('<option value="datum">Datum</option>');
+        end if;
+        if r_sysvar.waarde = 'tijdstip' then
+          htp.p('<option selected value="tijdstip">Tijd</option>');
+        else
+          htp.p('<option value="tijdstip">Tijd</option>');
+        end if;
+        if r_sysvar.waarde = 'wedstrijd_nummer' then
+          htp.p('<option selected value="wedstrijd_nummer">Nummer</option>');
+        else
+          htp.p('<option value="wedstrijd_nummer">Nummer</option>');
+        end if;
+        htp.p('</select>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'WEDSTRIJD_SORTERING_BEHEER3' then
+        /*################################
+        # code = WEDSTRIJD_SORTERING_BEHEER3 #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP><select name="p_wed_sort_beheer3">');
+        if r_sysvar.waarde = 'soort' then
+          htp.p('<option selected value="soort">Soort</option>');
+        else
+          htp.p('<option value="soort">Soort</option>');
+        end if;
+        if r_sysvar.waarde = 'poule' then
+          htp.p('<option selected value="poule">Poule</option>');
+        else
+          htp.p('<option value="poule">Poule</option>');
+        end if;
+        if r_sysvar.waarde = 'datum' then
+          htp.p('<option selected value="datum">Datum</option>');
+        else
+          htp.p('<option value="datum">Datum</option>');
+        end if;
+        if r_sysvar.waarde = 'tijdstip' then
+          htp.p('<option selected value="tijdstip">Tijd</option>');
+        else
+          htp.p('<option value="tijdstip">Tijd</option>');
+        end if;
+        if r_sysvar.waarde = 'wedstrijd_nummer' then
+          htp.p('<option selected value="wedstrijd_nummer">Nummer</option>');
+        else
+          htp.p('<option value="wedstrijd_nummer">Nummer</option>');
+        end if;
+        htp.p('</select>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'WEDSTRIJD_SORTERING_BEHEER4' then
+        /*################################
+        # code = WEDSTRIJD_SORTERING_BEHEER4 #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP><select name="p_wed_sort_beheer4">');
+        if r_sysvar.waarde = 'soort' then
+          htp.p('<option selected value="soort">Soort</option>');
+        else
+          htp.p('<option value="soort">Soort</option>');
+        end if;
+        if r_sysvar.waarde = 'poule' then
+          htp.p('<option selected value="poule">Poule</option>');
+        else
+          htp.p('<option value="poule">Poule</option>');
+        end if;
+        if r_sysvar.waarde = 'datum' then
+          htp.p('<option selected value="datum">Datum</option>');
+        else
+          htp.p('<option value="datum">Datum</option>');
+        end if;
+        if r_sysvar.waarde = 'tijdstip' then
+          htp.p('<option selected value="tijdstip">Tijd</option>');
+        else
+          htp.p('<option value="tijdstip">Tijd</option>');
+        end if;
+        if r_sysvar.waarde = 'wedstrijd_nummer' then
+          htp.p('<option selected value="wedstrijd_nummer">Nummer</option>');
+        else
+          htp.p('<option value="wedstrijd_nummer">Nummer</option>');
+        end if;
+        htp.p('</select>');
+        htp.p('</TR>');
+      end if;
+      if r_sysvar.code = 'WEDSTRIJD_SORTERING_BEHEER5' then
+        /*################################
+        # code = WEDSTRIJD_SORTERING_BEHEER5 #
+        ################################ */
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>');
+        htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              'required.gif"></TH><TH align="LEFT" valign=TOP>' ||
+              r_sysvar.omschrijving || '</TH>');
+        htp.p('<TD valign=TOP><select name="p_wed_sort_beheer5">');
+        if r_sysvar.waarde = 'soort' then
+          htp.p('<option selected value="soort">Soort</option>');
+        else
+          htp.p('<option value="soort">Soort</option>');
+        end if;
+        if r_sysvar.waarde = 'poule' then
+          htp.p('<option selected value="poule">Poule</option>');
+        else
+          htp.p('<option value="poule">Poule</option>');
+        end if;
+        if r_sysvar.waarde = 'datum' then
+          htp.p('<option selected value="datum">Datum</option>');
+        else
+          htp.p('<option value="datum">Datum</option>');
+        end if;
+        if r_sysvar.waarde = 'tijdstip' then
+          htp.p('<option selected value="tijdstip">Tijd</option>');
+        else
+          htp.p('<option value="tijdstip">Tijd</option>');
+        end if;
+        if r_sysvar.waarde = 'wedstrijd_nummer' then
+          htp.p('<option selected value="wedstrijd_nummer">Nummer</option>');
+        else
+          htp.p('<option value="wedstrijd_nummer">Nummer</option>');
+        end if;
+        htp.p('</select>');
+        htp.p('</TR>');
+      end if;
+    
+    end loop;
+    htp.p('</table>');
+  
+    for r_jaar_settings in c_jaar_settings loop
+        htp.br;
+        htp.p('<H1>Specifieke jaar instellingen voor ' || p_jaar || '</H1>');
+        htp.p('<table class="infotable" cellspacing="0" cellpadding="0" width="700">');
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>Stats intern</TH>');
+        htp.p('<TD valign=TOP>');
+        htp.p('<select name="p_stats_intern">');
+        if r_jaar_settings.stats_intern = 'J' then
+          htp.p('<option selected value="J">Ja</option>');
+          htp.p('<option value="N">Nee</option>');
+        else
+          htp.p('<option value="J">Ja</option>');
+          htp.p('<option selected value="N">Nee</option>');
+        end if;
+        htp.p('</select>');
+        htp.p('</TD>');
+        htp.p('</TR>');
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>Stats externe URL (eindig met /)</TH>');
+        htp.p('<TD valign=TOP>' || htf.formtext('p_stats_externe_url', 50, 100, r_jaar_settings.stats_externe_url) || '</TD>');
+        htp.p('</TR>');
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>Teamfoto-locatie intern</TH>');
+        htp.p('<TD valign=TOP>');
+        htp.p('<select name="p_teamfotolocatie_intern">');
+        if r_jaar_settings.teamfotolocatie_intern = 'J' then
+          htp.p('<option selected value="J">Ja</option>');
+          htp.p('<option value="N">Nee</option>');
+        else
+          htp.p('<option value="J">Ja</option>');
+          htp.p('<option selected value="N">Nee</option>');
+        end if;
+        htp.p('</select>');
+        htp.p('</TD>');
+        htp.p('</TR>');
+        htp.p('<TR>');
+        htp.p('<TH align="LEFT" valign=TOP>Teamfoto-locatie externe URL (eindig met /)</TH>');
+        htp.p('<TD valign=TOP>' || htf.formtext('p_teamfotolocatie_url', 50, 100, r_jaar_settings.teamfotolocatie_url) || '</TD>');
+        htp.p('</TR>');
+        htp.p('</table>');
+        htp.br;
+    end loop;
+    
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    menu;
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  -------------------------------------------------------------------------------
+  procedure bewaar_instellingen(p_jaar                        in varchar2 default null,
+                                p_info_pagina                 in varchar2,
+                                p_persoonlijke_prijzen_pagina in varchar2,
+                                p_refresh_rapporten           in varchar2,
+                                p_winnende_teams_pagina       in varchar2,
+                                p_refresh_kabelkrant          in varchar2,
+                                p_send_time                   in varchar2,
+                                p_sync_time                   in varchar2,
+                                p_dir_images                  in varchar2,
+                                p_jaar_series                 in varchar2,
+                                p_punten_verloren             in varchar2,
+                                p_punten_gelijk               in varchar2,
+                                p_punten_gewonnen             in varchar2,
+                                p_wed_sort_beheer1            in varchar2,
+                                p_wed_sort_beheer2            in varchar2,
+                                p_wed_sort_beheer3            in varchar2,
+                                p_wed_sort_beheer4            in varchar2,
+                                p_wed_sort_beheer5            in varchar2,
+                                p_wedstrijden_definitief      in varchar2,                                
+                                p_toon_huidig_toernooi_menu   in varchar2,
+                                p_stats_intern                in varchar2,
+                                p_stats_externe_url           in varchar2,
+                                p_teamfotolocatie_intern      in varchar2,
+                                p_teamfotolocatie_url         in varchar2
+                                ) is
+  
+  begin
+    ris_pck_alg.header('true', p_jaar);
+  
+    update ris_sysvar
+       set waarde = p_persoonlijke_prijzen_pagina
+     where code = 'PERSOONLIJKE_PRIJZEN_PAGINA';
+  
+    update ris_sysvar
+       set waarde = p_winnende_teams_pagina
+     where code = 'WINNENDE_TEAMS_PAGINA';
+  
+    update ris_sysvar
+       set waarde = p_info_pagina
+     where code = 'INFO_PAGINA';
+  
+    UPDATE ris_sysvar SET waarde = p_send_time WHERE code = 'SEND_TIME';
+  
+    UPDATE ris_sysvar SET waarde = p_sync_time WHERE code = 'SYNC_TIME';
+  
+    UPDATE ris_sysvar SET waarde = p_dir_images WHERE code = 'DIR_IMAGES';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_refresh_kabelkrant
+     WHERE code = 'REFESH_KABELKRANT';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_wedstrijden_definitief
+     WHERE code = 'WEDSTRIJDSCHEMA_DEFINITIEF';
+
+    UPDATE ris_sysvar
+       SET waarde = p_refresh_rapporten
+     WHERE code = 'REFRESH_RAPPORTEN';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_jaar_series
+     WHERE code = 'JAAR_SERIES';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_toon_huidig_toernooi_menu
+     WHERE code = 'TOON_HUIDIG_TOERNOOI_MENU';
+     
+    UPDATE ris_sysvar
+       SET waarde = p_punten_verloren
+     WHERE code = 'PUNTEN_VERLOREN';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_punten_gelijk
+     WHERE code = 'PUNTEN_GELIJK';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_punten_gewonnen
+     WHERE code = 'PUNTEN_GEWONNEN';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_wed_sort_beheer1
+     WHERE CODE = 'WEDSTRIJD_SORTERING_BEHEER1';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_wed_sort_beheer2
+     WHERE CODE = 'WEDSTRIJD_SORTERING_BEHEER2';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_wed_sort_beheer3
+     WHERE CODE = 'WEDSTRIJD_SORTERING_BEHEER3';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_wed_sort_beheer4
+     WHERE CODE = 'WEDSTRIJD_SORTERING_BEHEER4';
+  
+    UPDATE ris_sysvar
+       SET waarde = p_wed_sort_beheer5
+     WHERE CODE = 'WEDSTRIJD_SORTERING_BEHEER5';
+  
+    UPDATE ris_jaar_settings t
+       SET t.stats_intern = p_stats_intern
+         , t.stats_externe_url = p_stats_externe_url
+         , t.teamfotolocatie_intern = p_teamfotolocatie_intern
+         , t.teamfotolocatie_url = p_teamfotolocatie_url
+     WHERE t.jaar = to_number(p_jaar);
+     
+    commit;
+  
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_alg.instellingen?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  -------------------------------------------------------------------------------
+  procedure menu(p_jaar in varchar2 default null) is
+  
+  begin
+    htp.p(' <script language="javascript1.2" src="' ||
+          ris_pck_alg.geef_syspar('DIR_HOR_BEHEERMENU') ||
+          'menu.js"></script>');
+  end;
+  -------------------------------------------------------------------------------
+End ris_pck_alg;

@@ -1,0 +1,288 @@
+create or replace package body ris_pck_report is
+  ------------------------------------------------------------------------------------
+  procedure startpagina(p_jaar in varchar2 default null) is
+  
+    cursor v_c_soort is
+      select srt.*
+        from ris_soort      srt
+            ,ris_soort_jaar sjr
+       where sjr.afkorting = srt.afkorting and sjr.jaar = to_number(p_jaar) and
+             srt.afkorting not in ('DEMOHB', 'DEMOSB')
+       order by srt.display_volgnr;
+  
+  begin
+    ris_pck_alg.header('true'
+                      ,p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Rapporten</font>');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<table>');
+    htp.p('<tr><td>');
+    htp.p('<B>Wedstrijden vandaag</b>');
+    htp.p('<ul>');
+    for v_r_soort in v_c_soort loop
+      htp.p('<li><a href="ris_pck_report.toon_wedstrijden?p_soort=' ||
+            v_r_soort.afkorting || '&p_datum=' ||
+            to_char(sysdate
+                   ,'DD-MM-YYYY') || '&p_jaar=' || p_jaar || '">Wedstrijden ' ||
+            v_r_soort.titel_nl || '</a></li>');
+    end loop;
+    htp.p('<li><a href="ris_pck_report.toon_wedstrijden?p_soort=&p_datum=' ||
+          to_char(sysdate
+                 ,'DD-MM-YYYY') || '&p_jaar=' || p_jaar || '">Alle Wedstrijden</a></li>');
+    htp.p('</ul>');
+    htp.p('</td><td width="30">&nbsp;</td><td>');
+    htp.p('<b>Wedstrijden morgen</b>');
+    htp.p('<ul>');
+    for v_r_soort in v_c_soort loop
+      htp.p('<li><a href="ris_pck_report.toon_wedstrijden?p_soort=' ||
+            v_r_soort.afkorting || '&p_datum=' ||
+            to_char(sysdate + 1
+                   ,'DD-MM-YYYY') || '&p_jaar=' || p_jaar || '">Wedstrijden ' ||
+            v_r_soort.titel_nl || '</a></li>');
+    end loop;
+    htp.p('<li><a href="ris_pck_report.toon_wedstrijden?p_soort=&p_datum=' ||
+          to_char(sysdate + 1
+                 ,'DD-MM-YYYY') || '&p_jaar=' || p_jaar || '">Alle Wedstrijden</a></li>');
+    htp.p('</ul>');
+    htp.p('</td><td width="30">&nbsp;</td><td>');
+    htp.p('<b>Wedstrijden totaal</b>');
+    htp.p('<ul>');
+    for v_r_soort in v_c_soort loop
+      htp.p('<li><a href="ris_pck_report.toon_wedstrijden?p_soort=' ||
+            v_r_soort.afkorting || '&p_datum=&p_jaar=' || p_jaar || '">Wedstrijden ' ||
+            v_r_soort.titel_nl || '</a></li>');
+    end loop;
+    htp.p('<li><a href="ris_pck_report.toon_wedstrijden?p_soort=&p_datum=&p_jaar=' ||
+          p_jaar || '">Alle Wedstrijden</a></li>');
+    htp.p('</ul>');
+  
+    htp.p('</td></tr></table>');
+  
+    htp.hr;
+  
+    htp.p('<table>');
+    htp.p('<tr><td>');
+    htp.p('<b>Standen</b>');
+    htp.p('<ul>');
+    for v_r_soort in v_c_soort loop
+      htp.p('<li><a href="ris_pck_stand.toon_stand?p_soort=' || v_r_soort.afkorting ||
+            '&p_jaar=' || p_jaar || '">Stand ' || v_r_soort.titel_nl || '</a></li>');
+    end loop;
+    htp.p('</ul>');
+    htp.p('</td></tr></table>');
+  
+    ris_pck_alg.menu(p_jaar);
+  
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure toon_wedstrijden(p_soort in varchar2 default null
+                            ,p_datum in varchar2
+                            ,p_jaar  in varchar2 default null) is
+  
+    type ref_cursor is REF CURSOR;
+  
+    v_refresh_string       varchar2(200) := '';
+    v_refresh_rate         varchar2(10) := ris_pck_alg.geef_syspar('REFRESH_RAPPORTEN');
+    v_cur_wedstrijden      ref_cursor;
+    v_n_aantal_wedstrijden number := 0;
+    i                      number(12
+                                 ,2);
+    j                      number(12
+                                 ,2);
+    k                      number(12
+                                 ,2);
+    v_s_cur_string         varchar2(2000) := null;
+    v_s_huidige_datum      date;
+  
+    r_v_wedstrijden ris_v_wedstrijden%rowtype := null;
+  
+  begin
+    ris_pck_alg.header('true'
+                      ,p_jaar);
+  
+    if v_refresh_rate != '0' then
+      v_refresh_string := '<META HTTP-EQUIV="Refresh" CONTENT="' ||
+                          ris_pck_alg.geef_syspar('REFRESH_RAPPORTEN') ||
+                          ';URL=/pls/ris/ris_pck_report.toon_wedstrijden?p_soort=' ||
+                          p_soort || '&p_datum=' || p_datum || '&p_jaar=' || p_jaar || '">';
+    end if;
+  
+    htp.p(v_refresh_string);
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Rapporten</font>');
+    htp.p('<BR><BR><BR>');
+  
+    --    htp.p('<title>Robur ' || '''' || '58 Base- and Softball Series</title>');
+    --    ris_pck_alg.stylesheet;
+    --    htp.p('</head>');
+  
+    if p_soort is null then
+      if p_datum is null then
+        v_s_cur_string := 'SELECT * FROM RIS_V_WEDSTRIJDEN where jaar = ' || p_jaar;
+      else
+        v_s_cur_string := 'SELECT * FROM RIS_V_WEDSTRIJDEN WHERE jaar = ' || p_jaar ||
+                          ' and to_char(DATUM, ' || '''' || 'DD-MM-YYYY' || '''' ||
+                          ') = ' || '''' || p_datum || '''';
+      end if;
+    else
+      if p_datum is null then
+        v_s_cur_string := 'SELECT * FROM RIS_V_WEDSTRIJDEN WHERE jaar = ' || p_jaar ||
+                          ' and SOORT in ( ' || '''' || p_soort || '''' || ',' || '''' ||
+                          'DEMO' || p_soort || '''' || ') ' ||
+                          ' order by datum, tijdstip';
+      else
+        v_s_cur_string := 'SELECT * FROM RIS_V_WEDSTRIJDEN WHERE jaar = ' || p_jaar ||
+                          ' and SOORT in ( ' || '''' || p_soort || '''' || ',' || '''' ||
+                          'DEMO' || p_soort || '''' || ') ' || ' AND to_char(DATUM, ' || '''' ||
+                          'DD-MM-YYYY' || '''' || ')=' || '''' || p_datum || '''' ||
+                          ' order by datum, tijdstip';
+      end if;
+    end if;
+  
+    htp.htmlopen;
+    htp.bodyopen;
+  
+    if p_datum is null then
+      htp.p('<table>');
+      htp.p('<tr>');
+      htp.p('<td><h2>Wedstrijden ' || p_soort || ' totaal</td>');
+      htp.p('<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="ris_pck_report.startpagina?p_jaar=' ||
+            p_jaar || '">[Terug]</a></td>');
+      htp.p('<td>');
+      htp.p('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:window.print()"><img border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            '/printer.jpg" width="30" alt="Printen"></a>');
+      htp.p('</td>');
+      htp.p('</tr>');
+      htp.p('</table>');
+    
+    else
+      if p_datum = to_char(sysdate
+                          ,'DD-MM-YYYY') then
+        -- Vandaag
+        htp.p('<table>');
+        htp.p('<tr>');
+        htp.p('<td><h2>Wedstrijden ' || p_soort || ' vandaag</td>');
+        htp.p('<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="ris_pck_report.startpagina?p_jaar=' ||
+              p_jaar || '">[Terug]</a></td>');
+        htp.p('<td>');
+        htp.p('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:window.print()"><img border=0 src="' ||
+              ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              '/printer.jpg" width="30" alt="Printen"></a>');
+        htp.p('</td>');
+        htp.p('</tr>');
+        htp.p('</table>');
+      else
+        -- Morgen
+        htp.p('<table>');
+        htp.p('<tr>');
+        htp.p('<td><h2>Wedstrijden ' || p_soort || ' morgen</td>');
+        htp.p('<td>');
+        htp.p('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="ris_pck_report.startpagina?p_jaar=' ||
+              p_jaar || '">[Terug]</a>');
+        htp.p('</td>');
+        htp.p('<td>');
+        htp.p('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:window.print()"><img border=0 src="' ||
+              ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+              '/printer.jpg" width="30" alt="Printen"></a>');
+        htp.p('</td>');
+        htp.p('</tr>');
+        htp.p('</table>');
+      end if;
+    end if;
+  
+    htp.p('<table class="infotable">');
+    htp.p('<tr>');
+    htp.p('<th>Soort</th>');
+    htp.p('<th>Poule</th>');
+    htp.p('<th>Nr.</th>');
+    htp.p('<th>Datum</th>');
+    htp.p('<th>Tijd</th>');
+    htp.p('<th>Thuis</th>');
+    htp.p('<th>Uit</th>');
+    htp.p('<th>Uitslag</th>');
+    htp.p('<th>Opmerking</th>');
+    htp.p('</tr>');
+    open v_cur_wedstrijden for v_s_cur_string;
+    loop
+      fetch v_cur_wedstrijden
+        into r_v_wedstrijden;
+      exit when v_cur_wedstrijden%notfound;
+    
+      if v_s_huidige_datum != r_v_wedstrijden.datum then
+        htp.p('<tr><td colspan=9><hr></td></tr>');
+      end if;
+    
+      v_n_aantal_wedstrijden := v_n_aantal_wedstrijden + 1;
+    
+      i := v_n_aantal_wedstrijden;
+      j := i / 2;
+      k := round(j);
+      if (j = k) then
+        htp.p('<tr bgcolor="#FFFFCC">');
+      else
+        htp.p('<tr>');
+      end if;
+    
+      if r_v_wedstrijden.soort is null then
+        htp.p('<td valign="TOP">&nbsp;</td>');
+      else
+        htp.p('<td valign="TOP">' || r_v_wedstrijden.soort || '</td>');
+      end if;
+    
+      if r_v_wedstrijden.poule is null then
+        htp.p('<td valign="TOP">&nbsp;</td>');
+      else
+        htp.p('<td valign="TOP">' || r_v_wedstrijden.poule || '</td>');
+      end if;
+    
+      if r_v_wedstrijden.wedstrijd_nummer is null then
+        htp.p('<td valign="TOP">&nbsp;</td>');
+      else
+        htp.p('<td valign="TOP" nowrap>' || r_v_wedstrijden.wedstrijd_nummer || '</td>');
+      end if;
+    
+      htp.p('<td valign="TOP" nowrap>' ||
+            to_char(r_v_wedstrijden.datum
+                   ,'DD-MM-YYYY') || '</td>');
+    
+      if r_v_wedstrijden.tijdstip is null then
+        htp.p('<td valign="TOP">&nbsp;</td>');
+      else
+        htp.p('<td valign="TOP">' || r_v_wedstrijden.tijdstip || '</td>');
+      end if;
+    
+      htp.p('<td valign="TOP">' || r_v_wedstrijden.display_thuis || '</td>');
+      htp.p('<td valign="TOP">' || r_v_wedstrijden.display_uit || '</td>');
+    
+      htp.p('<td valign="TOP">' || r_v_wedstrijden.punten_voor || ' - ' ||
+            r_v_wedstrijden.punten_tegen || '</td>');
+    
+      if r_v_wedstrijden.opmerking is null then
+        htp.p('<td valign="TOP">&nbsp;</td>');
+      else
+        htp.p('<td valign="TOP">' || r_v_wedstrijden.opmerking || '</td>');
+      end if;
+      htp.p('</tr>');
+    
+      v_s_huidige_datum := r_v_wedstrijden.datum;
+    
+    end loop;
+    close v_cur_wedstrijden;
+  
+    htp.p('</table>');
+  
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  
+  end;
+  ------------------------------------------------------------------------------------
+end ris_pck_report;

@@ -1,0 +1,364 @@
+create or replace package body ris_pck_stats is
+
+  procedure stats(p_taal in varchar2 default null,
+                  p_jaar in varchar2 default null) is
+  
+    v_s_stats_intern   varchar2(1) := 'J';
+    v_s_stats_externe_url varchar2(100);
+    
+    cursor v_c_soort is
+      select srt.afkorting,
+             srt.titel_nl,
+             srt.titel_en,
+             sjr.statszip_available
+        from ris_soort srt, ris_soort_jaar sjr
+       where srt.afkorting = sjr.afkorting
+         and sjr.jaar = to_number(p_jaar)
+         and srt.afkorting not in ('DEMOHB', 'DEMOSB')
+       order by srt.display_volgnr;
+  
+    cursor v_c_jaar_settings is
+      select jss.stats_intern
+           , jss.stats_externe_url
+        from ris_jaar_settings jss
+       where jss.jaar = to_number(p_jaar);
+       
+  begin
+    open v_c_jaar_settings;
+    fetch v_c_jaar_settings into v_s_stats_intern, v_s_stats_externe_url;
+    close v_c_jaar_settings;
+    
+    ris_pck_alg.header('false');
+    htp.bodyopen;
+    htp.p('<font size=5>Statistieken / Stats ' || p_jaar || '</font>');
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.p('<H1>');
+    for v_r_soort in v_c_soort loop
+      if v_r_soort.statszip_available = 'J' then
+         if v_s_stats_intern = 'J' then
+            htp.p('<a href="/ris-doc/' || p_jaar || '/stats/' || v_r_soort.afkorting || '.zip">');
+         else 
+            htp.p('<a href="' || v_s_stats_externe_url || v_r_soort.afkorting || '.zip">');
+         end if;
+        htp.p('<img alt="' || v_r_soort.afkorting || ' Stats" border="0" src="/ris-img/zip.gif"></a>&nbsp;');
+      end if;
+      if v_s_stats_intern = 'J' then
+        htp.p('<a href="/ris-doc/' || p_jaar || '/stats/' || v_r_soort.afkorting || '/confstat.htm">' || v_r_soort.titel_nl || ' Statistieken / ' || v_r_soort.titel_en || ' Stats</a>');
+      else
+        htp.p('<a href="' || v_s_stats_externe_url || v_r_soort.afkorting || '/confstat.htm">' || v_r_soort.titel_nl || ' Statistieken / ' || v_r_soort.titel_en || ' Stats</a>');
+      end if;
+      htp.br;
+      htp.br;
+    end loop;
+  
+    htp.p('</H1>');
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------  
+  procedure wijzig_soortjaar(p_jaar in varchar2 default null) is
+  
+  cursor v_c_soortjaar is
+      SELECT *
+        FROM ris_soort_jaar
+       where jaar = to_number(p_jaar)
+       order by afkorting;
+  
+  begin
+    ris_pck_alg.header('true'
+                      ,p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Soort Jaar ' ||
+          p_jaar || '</font>');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function voegtoe() { ');
+    htp.p('    document.location.href="ris_pck_stats.voegtoe_soortjaar?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function verwijder(v_s_soort) { ');
+    htp.p('    if (confirm("SoortJaar verwijderen?")) { ');
+    htp.p('      document.location.href="ris_pck_stats.doe_verwijder_soortjaar?p_s_soort="+v_s_soort+"&p_jaar=' ||
+          p_jaar || '"; ');
+    htp.p('    } ');
+    htp.p('  } ');
+    htp.p('</script>');
+  
+    htp.p('<button onClick="javascript:voegtoe()">Toevoegen</button>');
+    htp.p('<table class="infotable" cellspacing="0" cellpadding="0" width="600">');
+    htp.tablerowopen;
+    htp.tableheader('&nbsp;Wijzig&nbsp;'
+                   ,cattributes => 'class="infoth" align="CENTER" width="30"');
+    htp.tableheader('&nbsp;Verwijder&nbsp;'
+                   ,cattributes => 'class="infoth" align="CENTER" width="30"');
+    htp.tableheader('&nbsp;Soort&nbsp;'
+                   ,cattributes => 'class="infoth" align="CENTER" width="200"');
+    htp.tableheader('&nbsp;Stats zip beschikbaar&nbsp;'
+                   ,cattributes => 'class="infoth"');
+    htp.tablerowclose;
+    for v_r_soortjaar in v_c_soortjaar loop
+      htp.tablerowopen;
+      htp.p('<td align=center class="infotd"><a href="ris_pck_stats.doe_wijzig_soortjaar?p_s_soort=' ||
+            v_r_soortjaar.afkorting || '&p_jaar=' || p_jaar ||
+            '"><img alt="wijzig soortjaar" border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') || 'edit_icon.gif"></a></td>');
+      htp.p('<td align=center class="infotd"><a href="javascript:verwijder(' || '''' || 
+            v_r_soortjaar.afkorting || '''' ||
+            ')"><img border=0 alt="Verwijder soortjaar" src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') || 'delete_icon.gif"></a></td>');
+      htp.tabledata(v_r_soortjaar.afkorting
+                   ,cattributes => 'class="infotd"');
+      htp.tabledata(v_r_soortjaar.statszip_available
+                   ,cattributes => 'class="infotd"');
+      htp.tablerowclose;
+    end loop;
+    htp.p('</table>');
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;    
+  end;
+
+  ------------------------------------------------------------------------------------  
+  procedure doe_wijzig_soortjaar(p_s_soort in varchar2
+                                ,p_jaar     in varchar2 default null) is
+  
+    cursor v_c_soortjaar is
+      select sjr.*
+        from ris_soort_jaar sjr
+       where sjr.afkorting = p_s_soort and sjr.jaar = to_number(p_jaar);
+  
+  begin
+    ris_pck_alg.header('true'
+                      ,p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Wijzigen Soort Jaar');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function terugMenu() { ');
+    htp.p('    document.location.href="ris_pck_stats.wijzig_soortjaar?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (controle) {
+                  document.f_soortjaar.submit();
+                }
+              } ');
+    htp.p('</script>');
+  
+    htp.formopen('ris_pck_stats.bewaar_wijzig_soortjaar'
+                ,'POST'
+                ,cattributes => 'name="f_soortjaar"');
+    htp.formhidden('p_s_soort'
+                  ,p_s_soort);
+    htp.formhidden('p_jaar'
+                  ,p_jaar);
+  
+    htp.tableopen(cattributes => 'cellspacing=0');
+    for v_r_soortjaar in v_c_soortjaar loop
+      htp.tablerowopen;
+      htp.tableheader('Soort&nbsp;'
+                     ,calign => 'RIGHT');
+      htp.p('<TD>');
+      htp.p( v_r_soortjaar.afkorting );
+      htp.p('</TD>');
+      htp.tablerowclose;
+      htp.tablerowopen;
+      htp.tableheader('Stats zip beschikbaar&nbsp;'
+                     ,calign => 'RIGHT');
+      htp.p('<TD>');
+      htp.p('<select name="p_s_statszip_available">');
+      if v_r_soortjaar.statszip_available = 'J' then
+        htp.p('<option selected value="J">Ja</option>');
+        htp.p('<option value="N">Nee</option>');
+      else
+        htp.p('<option value="J">Ja</option>');
+        htp.p('<option selected value="N">Nee</option>');
+      end if;
+      htp.p('</select>');
+      htp.p('</TD>');
+      htp.tablerowclose;
+    end loop;
+    htp.tableclose;
+    htp.br;
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    htp.formclose;
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure bewaar_wijzig_soortjaar(p_s_soort               in varchar2
+                                   ,p_s_statszip_available  in varchar2
+                                   ,p_jaar                  in varchar2) is
+  
+  begin
+    UPDATE ris_soort_jaar
+       set statszip_available = p_s_statszip_available
+     where afkorting = p_s_soort
+       and jaar = p_jaar;
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_stats.wijzig_soortjaar?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Wijzig Soortjaar'
+                                 ,sqlcode
+                                 ,sqlerrm
+                                 ,'Afkorting: ' || p_s_soort);
+  end;
+  ------------------------------------------------------------------------------------
+  procedure voegtoe_soortjaar(p_jaar in varchar2 default null) is
+  
+   cursor v_c_soort is
+      select srt.afkorting
+        from ris_soort srt
+       order by srt.display_volgnr;
+           
+  begin
+    ris_pck_alg.header('true'
+                      ,p_jaar);
+  
+    htp.bodyopen(cattributes => 'onLoad="javascript:document.f_hoogtepunt.p_s_titel.focus()"');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Voegtoe Soort Jaar');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (controle) {
+                  document.forms[0].submit();
+                }
+              }
+               ');
+    htp.p('</script>');
+  
+    htp.formopen('ris_pck_stats.bewaar_voegtoe_soortjaar'
+                ,'POST'
+                ,cattributes => 'name="f_soortjaar"');
+    htp.formHidden('p_jaar'
+                  ,p_jaar);
+  
+    htp.tableopen(cattributes => 'cellspacing=0');
+  
+    htp.tablerowopen;
+    htp.tableheader('Soort&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.p('<TD>');
+    htp.p('<select name="p_s_soort">');
+    htp.p('<option selected value="">- Maak een keuze -</option>');
+    for v_r_soort in v_c_soort loop
+       htp.p('<option value="'||v_r_soort.afkorting||'">'||v_r_soort.afkorting||'</option>');
+    end loop;
+    htp.p('</select>');
+    htp.p('</TD>');
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Stats zip beschikbaar&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.p('<TD valign=TOP>');
+    htp.p('<select name="p_s_statszip_available">');
+    htp.p('<option selected value="">- Maak een keuze -</option>');
+    htp.p('<option value="J">Ja</option>');
+    htp.p('<option value="N">Nee</option>');
+    htp.p('</select>');
+    htp.p('</TD>');                   
+    htp.tablerowclose;
+      
+    htp.tableclose;
+    htp.formclose;
+  
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure bewaar_voegtoe_soortjaar(p_s_soort                in varchar2
+                                    ,p_s_statszip_available   in varchar2
+                                    ,p_jaar                   in varchar2) is
+  
+  begin
+    insert into ris_soort_jaar
+      (afkorting
+      ,statszip_available
+      ,jaar)
+    values
+      (p_s_soort
+      ,p_s_statszip_available
+      ,to_number(p_jaar));
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_stats.wijzig_soortjaar?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Voegtoe Soortjaar'
+                                 ,sqlcode
+                                 ,sqlerrm
+                                 ,'Titel: ' || p_s_soort);
+    
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_verwijder_soortjaar(p_s_soort  in varchar2
+                                   ,p_jaar     in varchar2 default null) is
+  
+  begin
+    ris_pck_alg.header('false'
+                      ,p_jaar);
+  
+    DELETE FROM ris_soort_jaar
+     WHERE afkorting = p_s_soort
+       AND jaar = to_number(p_jaar);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_stats.wijzig_soortjaar?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Verwijderen Soortjaar'
+                                 ,sqlcode
+                                 ,sqlerrm
+                                 ,'Soort: ' || p_s_soort);
+    
+  end;
+
+end ris_pck_stats;

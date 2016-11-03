@@ -1,0 +1,688 @@
+create or replace package body ris_pck_gebruikers is
+
+  procedure gebruikersbeheer(p_jaar in varchar2 default null) is
+  
+    cursor c_gebruikers is
+      SELECT gbr.*
+            ,tem.soort || ' - ' || tem.naam as teamnaam
+        FROM ris_gebruikers gbr
+            ,ris_teams      tem
+       WHERE gbr.temvolgnr = tem.volgnr(+) and tem.jaar(+) = to_number(p_jaar) and
+             gbr.jaar = to_number(p_jaar)
+       ORDER BY gbr.achternaam
+               ,gbr.voornaam;
+  
+  begin
+    ris_pck_alg.header('TRUE'
+                      ,p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Gebruikers</font>');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p(' <script> ');
+    htp.p('   function verwijderGebruiker(v_gebruiker_nr) { ');
+    htp.p('     if (confirm("Gebruiker verwijderen?")) { ');
+    htp.p('       document.location.href="ris_pck_gebruikers.verwijder_gebruiker?p_gbr_volgnr="+v_gebruiker_nr+"&p_jaar=' ||
+          p_jaar || '"; ');
+    htp.p('     } ');
+    htp.p('   } ');
+    htp.p('   function wijzigGebruiker(v_gebruiker_nr) { ');
+    htp.p('     document.location.href="ris_pck_gebruikers.wijzig_gebruiker?p_gbr_volgnr="+v_gebruiker_nr+"&p_jaar=' ||
+          p_jaar || '"; ');
+    htp.p('   } ');
+    htp.p('   function wijzigWachtwoord(v_gebruiker_nr) { ');
+    htp.p('     document.location.href="ris_pck_gebruikers.wachtwoord?p_gbr_volgnr="+v_gebruiker_nr+"&p_jaar=' ||
+          p_jaar || '"; ');
+    htp.p('   } ');
+    htp.p('   function voegtoe() { ');
+    htp.p('     document.location.href="ris_pck_gebruikers.nieuwe_gebruiker?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('   } ');
+    htp.p(' </script> ');
+  
+    htp.p('<button onClick="javascript:voegtoe()">Toevoegen</button>');
+    htp.p('<table class="infotable" cellspacing=0>');
+    htp.p('<TR>');
+    htp.p('<TH class="infoth">&nbsp;</TH>');
+    htp.p('<TH class="infoth">&nbsp;</TH>');
+    htp.p('<TH class="infoth">&nbsp;</TH>');
+    htp.p('<TH class="infoth">Loginid&nbsp;</TH>');
+    htp.p('<TH class="infoth">Achternaam&nbsp;</TH>');
+    htp.p('<TH class="infoth">Tussenvoegsel&nbsp;</TH>');
+    htp.p('<TH class="infoth">Voornaam&nbsp;</TH>');
+    htp.p('<TH class="infoth">Team&nbsp;</TH>');
+    htp.p('<TH class="infoth"># Login</TH>');
+    htp.p('<TH class="infoth">Laatste Login</TH>');
+    htp.p('</TR>');
+  
+    for r_gebruikers in c_gebruikers loop
+      htp.p('<TR><TD align=center><a href="javascript:wijzigGebruiker(' ||
+            r_gebruikers.volgnr ||
+            ')"><img alt="Wijzig gebruikersgegevens" border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') || 'edit_icon.gif"></a></TD>');
+      htp.p('<TD align=center><a href="javascript:verwijderGebruiker(' ||
+            r_gebruikers.volgnr || ')"><img alt="Verwijder gebruiker" border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') || 'delete_icon.gif"></a></TD>');
+      htp.p('<TD align=center><a href="javascript:wijzigWachtwoord(' ||
+            r_gebruikers.volgnr || ')"><img alt="Wijzig wachtwoord" border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') || 'wachtwoord_icon.gif"></a></TD>');
+      htp.p('<TD>' || r_gebruikers.loginid || '</TD>');
+      htp.p('<TD>' || r_gebruikers.achternaam || '</TD>');
+      htp.p('<TD>' || r_gebruikers.tussenvoegsel || '</TD>');
+      htp.p('<TD>' || r_gebruikers.voornaam || '</TD>');
+      htp.p('<TD>' || r_gebruikers.teamnaam || '</TD>');
+      htp.p('<TD align="RIGHT">' || to_char(nvl(r_gebruikers.aantal_logins
+                                               ,0)) || '</TD>');
+      htp.p('<TD align="RIGHT">' ||
+            to_char(r_gebruikers.laatste_login
+                   ,'DD-MM-YYYY HH24:MI') || '</TD>');
+    end loop;
+  
+    htp.p('</TR>');
+    htp.p('</table>');
+  
+    ris_pck_alg.menu(p_jaar);
+    htp.p('</body>');
+    htp.p('</html>');
+  end;
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure nieuwe_gebruiker
+  --
+  --
+  --  Author: Edwin Godefrooij
+  --  Date:   8 Maart 1999
+  --
+  --------------------------------------------------------------------------------
+  procedure nieuwe_gebruiker(p_jaar in varchar2 default null) is
+  
+    cursor c_teams is
+      select tem.volgnr
+            ,tem.soort || ' - ' || tem.naam as teamnaam
+        from ris_teams tem
+       where tem.jaar = to_number(p_jaar)
+       order by teamnaam;
+  
+  begin
+    -- nieuwe_gebruiker
+    ris_pck_alg.header('TRUE'
+                      ,p_jaar);
+  
+    htp.bodyOpen(Cattributes => 'onLoad="document.forms[0].p_loginnaam.focus()"');
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Toevoegen Gebruiker</font>');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (document.gbr.p_loginnaam.value == "") {
+                  alert("Loginnaam is verplicht!");
+                  controle = false;
+                }
+                if (document.gbr.p_achternaam.value == "") {
+                  alert("Achternaam is verplicht!");
+                  controle = false;
+                }
+                if (document.gbr.p_wachtwoord.value == "") {
+                  alert("Wachtwoord is verplicht!");
+                  controle = false;
+                }
+                if (controle) {
+                  document.gbr.submit();
+                }
+              } ');
+    htp.p('</script>');
+  
+    htp.formOpen('ris_pck_gebruikers.verwerk_nieuwe_gebruiker'
+                ,'GET'
+                ,Cattributes => 'name="gbr"');
+    htp.formhidden('p_jaar'
+                  ,p_jaar);
+    htp.tableopen(cattributes => 'cellspacing="0" class="infotable"');
+  
+    htp.tablerowopen;
+    htp.tableheader('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+                    'required.gif">&nbsp;&nbsp;Loginnaam:&nbsp;'
+                   ,cattributes => 'align="RIGHT"');
+    htp.tabledata(htf.formtext('p_loginnaam'
+                              ,20
+                              ,50));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Voornaam:&nbsp;'
+                   ,cattributes => 'align="RIGHT"');
+    htp.tabledata(htf.formtext('p_voornaam'
+                              ,50
+                              ,100));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Tussenvoegsel:&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_tussenvoegsel'
+                              ,25
+                              ,100));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+                    'required.gif">&nbsp;&nbsp;Achternaam:&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_achternaam'
+                              ,50
+                              ,100));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+                    'required.gif">&nbsp;&nbsp;Wachtwoord:&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_wachtwoord'
+                              ,25
+                              ,50));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+                    'required.gif">&nbsp;&nbsp;Team:&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.p('<td>');
+    htp.p('<SELECT name="p_temvolgnr">');
+    for r_teams in c_teams loop
+      htp.p('<option value="' || r_teams.volgnr || '">' || r_teams.teamnaam ||
+            '</option>');
+    end loop;
+    htp.p('</select>');
+    htp.p('</td>');
+    htp.tablerowclose;
+  
+    htp.tableclose;
+    htp.formclose;
+  
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+  
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end; -- nieuwe_gebruiker
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure verwerk_nieuwe_gebruiker
+  --
+  --
+  --  Author: Edwin Godefrooij
+  --  Date:   8 Maart 1999
+  --
+  --------------------------------------------------------------------------------
+  procedure verwerk_nieuwe_gebruiker(p_loginnaam     in varchar2
+                                    ,p_voornaam      in varchar2
+                                    ,p_tussenvoegsel in varchar2
+                                    ,p_achternaam    in varchar2
+                                    ,p_wachtwoord    in varchar2
+                                    ,p_temvolgnr     in varchar2
+                                    ,p_jaar          in varchar2 default null) is
+  
+    v_controle number := 0;
+  
+  begin
+    -- verwerk_nieuwe_gebruiker
+    ris_pck_alg.header('FALSE'
+                      ,p_jaar);
+  
+    htp.p('<body>');
+  
+    Begin
+      select count(1)
+        into v_controle
+        from ris_gebruikers
+       where upper(loginid) = upper(p_loginnaam) and jaar = to_number(p_jaar);
+    
+      if v_controle > 0 then
+        htp.p('Gebruiker ' || p_loginnaam || ' bestaat al!');
+      else
+        insert into ris_gebruikers
+          (volgnr
+          ,loginid
+          ,achternaam
+          ,voornaam
+          ,tussenvoegsel
+          ,wachtwoord
+          ,temvolgnr
+          ,jaar)
+        values
+          (gbr_seq.nextval
+          ,p_loginnaam
+          ,p_achternaam
+          ,p_voornaam
+          ,p_tussenvoegsel
+          ,p_wachtwoord
+          ,p_temvolgnr
+          ,to_number(p_jaar));
+      
+        commit;
+      end if;
+    End;
+  
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_gebruikers.gebruikersbeheer?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  end; -- verwerk_nieuwe_gebruiker
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure wijzig_gebruiker
+  --
+  --
+  --  Author: Edwin Godefrooij / Roccade Public - SD
+  --  Date:   28 januari 2002
+  --
+  --------------------------------------------------------------------------------
+  procedure wijzig_gebruiker(p_gbr_volgnr in varchar2
+                            ,p_jaar       in varchar2 default null) is
+  
+    cursor c_gebruiker is
+      SELECT *
+        FROM ris_gebruikers
+       WHERE volgnr = to_number(p_gbr_volgnr) and jaar = to_number(p_jaar);
+  
+    cursor c_teams is
+      select tem.volgnr
+            ,tem.soort || ' - ' || tem.naam as teamnaam
+        from ris_teams tem
+       where jaar = to_number(p_jaar)
+       order by teamnaam;
+  
+  begin
+    ris_pck_alg.header('TRUE'
+                      ,p_jaar);
+  
+    htp.bodyOpen(Cattributes => 'onLoad="document.forms[0].p_loginnaam.focus()"');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Wijzig gebruiker</font>');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (document.f_gebruiker.p_loginid.value == "") {
+                  alert("Loginnaam is verplicht!");
+                  controle = false;
+                }
+                if (document.f_gebruiker.p_achternaam.value == "") {
+                  alert("Achternaam is verplicht!");
+                  controle = false;
+                }
+                if (controle) {
+                  document.f_gebruiker.submit();
+                }
+              } ');
+    htp.p('</script>');
+  
+    htp.p('<FORM name="f_gebruiker" method="POST" action="ris_pck_gebruikers.bewaar_gebruiker">');
+    htp.formhidden('p_jaar'
+                  ,p_jaar);
+    htp.p('<INPUT TYPE=hidden name="p_gbr_volgnr" value="' || p_gbr_volgnr || '">');
+  
+    htp.p('<table class="infotable" cellspacing=0>');
+  
+    for r_gebruiker in c_gebruiker loop
+      htp.p('<TR>');
+      htp.p('<TH align="RIGHT">');
+      htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'required.gif">&nbsp;&nbsp;Loginnaam:&nbsp;');
+      htp.p('</TH>');
+      htp.p('<TD>');
+      htp.p('<INPUT TYPE="TEXT" name="p_loginid" value="' || r_gebruiker.loginid ||
+            '" size=25 maxlength=50>');
+      htp.p('</TD>');
+      htp.p('</TR><TR>');
+      htp.p('<TH align="RIGHT">');
+      htp.p('Voornaam:&nbsp;');
+      htp.p('</TH>');
+      htp.p('<TD>');
+      htp.p('<INPUT TYPE="TEXT" name="p_voornaam" value="' || r_gebruiker.voornaam ||
+            '" size=25 maxlength=50>');
+      htp.p('</TD>');
+      htp.p('</TR><TR>');
+      htp.p('<TH align="RIGHT">');
+      htp.p('Tussenvoegsel:&nbsp;');
+      htp.p('</TH>');
+      htp.p('<TD>');
+      htp.p('<INPUT TYPE="TEXT" name="p_tussenvoegsel" value="' ||
+            r_gebruiker.tussenvoegsel || '" size=10 maxlength=50>');
+      htp.p('</TD>');
+      htp.p('</TR><TR>');
+      htp.p('<TH align="RIGHT">');
+      htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'required.gif">&nbsp;&nbsp;Achternaam:&nbsp;');
+      htp.p('</TH>');
+      htp.p('<TD>');
+      htp.p('<INPUT TYPE="TEXT" name="p_achternaam" value="' || r_gebruiker.achternaam ||
+            '" size=50 maxlength=50>');
+      htp.p('</TD>');
+      htp.p('</TR><TR>');
+      htp.p('<TH align="RIGHT">');
+      htp.p('<img src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+            'required.gif">&nbsp;&nbsp;Teamnaam:&nbsp;');
+      htp.p('</TH>');
+      htp.p('<TD>');
+      htp.p('<SELECT name="p_temvolgnr">');
+      for r_teams in c_teams loop
+        if r_teams.volgnr = r_gebruiker.temvolgnr then
+          htp.p('<option selected value="' || r_teams.volgnr || '">' || r_teams.teamnaam ||
+                '</option>');
+        else
+          htp.p('<option value="' || r_teams.volgnr || '">' || r_teams.teamnaam ||
+                '</option>');
+        end if;
+      end loop;
+      htp.p('</select>');
+      htp.p('</TD>');
+      htp.p('</TR>');
+    end loop;
+  
+    htp.p('</TABLE>');
+    htp.br;
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure bewaar_gebruiker
+  --
+  --
+  --  Author: Edwin Godefrooij / Roccade Public - SD
+  --  Date:   30 januari 2002
+  --
+  --------------------------------------------------------------------------------
+  procedure bewaar_gebruiker(p_gbr_volgnr    in varchar2
+                            ,p_loginid       in varchar2
+                            ,p_voornaam      in varchar2
+                            ,p_tussenvoegsel in varchar2
+                            ,p_achternaam    in varchar2
+                            ,p_temvolgnr     in varchar2
+                            ,p_jaar          in varchar2) is
+  
+  begin
+    -- verwerk_nieuwe_gebruiker
+    ris_pck_alg.header('FALSE'
+                      ,p_jaar);
+  
+    htp.p('<body>');
+  
+    UPDATE ris_gebruikers
+       SET loginid       = p_loginid
+          ,voornaam      = p_voornaam
+          ,tussenvoegsel = p_tussenvoegsel
+          ,achternaam    = p_achternaam
+          ,temvolgnr     = p_temvolgnr
+          ,jaar          = to_number(p_jaar)
+     WHERE volgnr = to_number(p_gbr_volgnr);
+  
+    commit;
+  
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_gebruikers.gebruikersbeheer?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure verwijder_gebruiker
+  --
+  --
+  --  Author: Edwin Godefrooij / Roccade Public - SD
+  --  Date:   8 Maart 1999
+  --
+  --------------------------------------------------------------------------------
+  procedure verwijder_gebruiker(p_gbr_volgnr in varchar2
+                               ,p_jaar       in varchar2 default null) is
+  
+  begin
+    -- verwerk_nieuwe_gebruiker
+    ris_pck_alg.header('FALSE'
+                      ,p_jaar);
+  
+    htp.p('<body>');
+  
+    delete from ris_gebruikers
+     where volgnr = to_number(p_gbr_volgnr);
+  
+    commit;
+  
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_gebruikers.gebruikersbeheer?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.bodyclose;
+    htp.htmlclose;
+  end; -- verwijder_gebruiker
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure verwerk_verwijder_gebruiker
+  --
+  --
+  --  Author: Edwin Godefrooij / Roccade Public - SD
+  --  Date:   8 Maart 1999
+  --
+  --------------------------------------------------------------------------------
+  procedure verwerk_verwijder_gebruiker(p_s_volgnr in varchar2
+                                       ,p_jaar     in varchar2 default null) is
+  
+    v_s_resultaat_string varchar2(2000) := null;
+  
+    v_controle number(10);
+  
+  begin
+    -- verwerk_verwijder_gebruiker
+    Begin
+      select count(*)
+        into v_controle
+        from ris_gebruikers
+       where volgnr = to_number(p_s_volgnr);
+    
+      if v_controle > 0 then
+      
+        delete from ris_bericht ber
+         where ber.gbrvolgnr = to_number(p_s_volgnr);
+      
+        delete from ris_gebruikers gbr
+         where gbr.volgnr = to_number(p_s_volgnr);
+      
+        commit;
+      
+        v_s_resultaat_string := 'Verwijderen gebruiker gelukt.';
+      
+      else
+        v_s_resultaat_string := 'Gebruiker is onbekend.';
+      end if;
+    
+    exception
+      when others then
+        v_s_resultaat_string := 'Onbekende fout! ' || sqlerrm;
+    End;
+  
+    htp.htmlOpen;
+    htp.headOpen;
+    htp.script('
+      function toonResultaat() {
+        var v_s_melding = "' || v_s_resultaat_string || '";
+        top.HFD_MELDING.location.href="ris_pck_alg.melding?p_s_melding="+v_s_melding;
+        top.HFD_RIGHT.location.href="ris_pck_gebruikers.verwijder_gebruiker?p_jaar=' ||
+               p_jaar || '";
+      }
+    ');
+  
+    htp.headclose;
+    htp.bodyopen(cattributes => 'onLoad="toonResultaat()"');
+    htp.bodyclose;
+    htp.htmlclose;
+  
+  end; -- verwerk_verwijder_gebruiker
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure wachtwoord
+  --
+  --
+  --  Author: Edwin Godefrooij
+  --  Date:   9 juni 2003
+  --
+  --------------------------------------------------------------------------------
+  Procedure wachtwoord(p_gbr_volgnr in varchar2 default null
+                      ,p_jaar       in varchar2 default null) is
+  
+    cursor c_gebruiker is
+      select gbr.*
+        from ris_gebruikers gbr
+       where gbr.volgnr = to_number(p_gbr_volgnr);
+  
+  begin
+    -- wachtwoord
+    ris_pck_alg.header('TRUE'
+                      ,p_jaar);
+  
+    htp.bodyOpen;
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Wijzig wachtwoord</font>');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function bewaar() {
+               var controle = true;
+
+               if ((document.formpass.p_s_nieuw_wachtwoord1.value == "") && (document.formpass.p_s_nieuw_wachtwoord2.value == "") ) {
+                 document.formpass.submit();
+               } else {
+                 if (document.formpass.p_s_nieuw_wachtwoord1.value == "") {
+                   alert("Nieuw wachtwoord 1 is verplicht!");
+                   controle = false;
+                 }
+                 if (document.formpass.p_s_nieuw_wachtwoord2.value == "") {
+                   alert("Nieuw wachtwoord 2 is verplicht!");
+                   controle = false;
+                 }
+                 if (document.formpass.p_s_nieuw_wachtwoord2.value != document.formpass.p_s_nieuw_wachtwoord1.value ) {
+                   alert("De 2 wachtwoorden komen niet overeen!");
+                   controle = false;
+                 }
+                 if (controle) {
+                   document.formpass.submit();
+                 }
+               }
+             }
+             function terug() {
+               document.location.href="javascript:history.back()";
+             } ');
+    htp.p('</script>');
+  
+    for r_gebruiker in c_gebruiker loop
+      --Start of FORM--
+      Htp.formopen('ris_pck_gebruikers.wijzig_wachtwoord'
+                  ,'POST'
+                  ,cattributes => 'name="formpass"');
+      Htp.formhidden('p_gbr_volgnr'
+                    ,p_gbr_volgnr);
+      htp.formHidden('p_jaar'
+                    ,p_jaar);
+      Htp.TableOpen(Cattributes => 'cellspacing="0" class="infotable"');
+      Htp.Tablerowopen;
+      Htp.TableHeader('Loginnaam:&nbsp;'
+                     ,Calign => 'RIGHT');
+      Htp.TableData(r_gebruiker.loginid);
+      Htp.Tablerowclose;
+      Htp.Tablerowopen;
+      Htp.TableHeader('Naam:&nbsp;'
+                     ,Calign => 'RIGHT');
+      if r_gebruiker.tussenvoegsel is null then
+        Htp.TableData(r_gebruiker.voornaam || ' ' || r_gebruiker.achternaam);
+      else
+        Htp.TableData(r_gebruiker.voornaam || ' ' || r_gebruiker.tussenvoegsel || ' ' ||
+                      r_gebruiker.achternaam);
+      end if;
+      Htp.Tablerowclose;
+      Htp.Tablerowopen;
+      Htp.Tabledata('Nieuw wachtwoord:&nbsp;'
+                   ,Calign => 'RIGHT');
+      Htp.Tabledata(Htf.Formpassword('p_s_nieuw_wachtwoord1'
+                                    ,20
+                                    ,40));
+      Htp.Tablerowclose;
+      Htp.Tablerowopen;
+      Htp.Tabledata('Nieuw wachtwoord:&nbsp;'
+                   ,Calign => 'RIGHT');
+      Htp.Tabledata(Htf.Formpassword('p_s_nieuw_wachtwoord2'
+                                    ,20
+                                    ,40));
+      Htp.Tablerowclose;
+      Htp.Tableclose;
+    
+      Htp.formClose; --end of FORM--
+    end loop;
+  
+    htp.br;
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyClose;
+    htp.htmlClose;
+  End;
+
+  --------------------------------------------------------------------------------
+  --
+  --  Procedure wijzig_wachtwoord
+  --
+  --
+  --  Author: Edwin Godefrooij / Roccade Public - SD
+  --  Date:   16 Maart 1999
+  --
+  --------------------------------------------------------------------------------
+  Procedure wijzig_wachtwoord(p_gbr_volgnr          In Varchar2 default null
+                             ,p_s_nieuw_wachtwoord1 In Varchar2
+                             ,p_s_nieuw_wachtwoord2 In Varchar2
+                             ,p_jaar                in varchar2 default null) Is
+  
+  Begin
+    If p_s_nieuw_wachtwoord1 is not null and p_s_nieuw_wachtwoord2 is not null then
+      If p_s_nieuw_wachtwoord1 = p_s_nieuw_wachtwoord2 Then
+      
+        update ris_gebruikers
+           set wachtwoord = p_s_nieuw_wachtwoord1
+         where volgnr = to_number(p_gbr_volgnr);
+      
+        commit;
+      
+      Else
+        Htp.print('<script>alert("De 2 wachtwoorden komen niet overeen!");</script>');
+      
+        htp.p('<script>');
+        htp.p('  document.location.href="javascript:history.back()"');
+        htp.p('</script>');
+      End If;
+    
+    End If;
+  
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_gebruikers.gebruikersbeheer?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.bodyClose;
+    htp.htmlClose;
+  End;
+
+end ris_pck_gebruikers;

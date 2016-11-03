@@ -1,0 +1,77 @@
+create or replace package body ris_pck_wfe_trg is
+  ----------------------------------------------------------------------------
+  procedure init_table is
+  
+  begin
+    v_i_index := 0;
+  end;
+  ----------------------------------------------------------------------------
+  procedure vul_table(p_row_rowid in rowid) is
+  
+  begin
+    v_i_index := v_i_index + 1;
+    v_t_finale_wedstrijd(v_i_index) := p_row_rowid;
+  end;
+  ----------------------------------------------------------------------------
+  procedure verwerk_table is
+  
+  begin
+    for i in 1 .. ris_pck_wfe_trg.v_i_index loop
+      verwerk_row(v_t_finale_wedstrijd(i));
+    end loop;
+  end;
+  ----------------------------------------------------------------------------
+  procedure verwerk_row(p_row_rowid in rowid) is
+  
+    v_n_winnaar   number := 0;
+    v_n_verliezer number := 0;
+    v_n_jaar      number(4) := ris_pck_alg.geef_syspar('SERIES_JAAR');
+  
+    cursor v_cur_finale_wedstrijd is
+      select wed.*
+        from ris_wedstrijden_finale wed
+       where wed.rowid = p_row_rowid;
+  
+  begin
+    -- Een finalewedstrijd is gespeeld waardoor het mogelijk is dat een andere
+    -- finalewedstrijd bekend wordt.
+    for v_rec_finale_wedstrijd in v_cur_finale_wedstrijd loop
+      if v_rec_finale_wedstrijd.punten_voor is not null and
+         v_rec_finale_wedstrijd.punten_tegen is not null then
+        if v_rec_finale_wedstrijd.punten_voor > v_rec_finale_wedstrijd.punten_tegen then
+          v_n_winnaar   := v_rec_finale_wedstrijd.thuis_nr;
+          v_n_verliezer := v_rec_finale_wedstrijd.uit_nr;
+        else
+          v_n_winnaar   := v_rec_finale_wedstrijd.uit_nr;
+          v_n_verliezer := v_rec_finale_wedstrijd.thuis_nr;
+        end if;
+      
+        update ris_wedstrijden_finale wed
+           set wed.thuis_nr = v_n_winnaar
+         where wed.thuis_wv = 'Winnaar' and
+               wed.thuis_wed = v_rec_finale_wedstrijd.wedstrijd_nummer and
+               wed.soort = v_rec_finale_wedstrijd.soort and wed.jaar = v_n_jaar;
+      
+        update ris_wedstrijden_finale wed
+           set wed.uit_nr = v_n_winnaar
+         where wed.uit_wv = 'Winnaar' and
+               wed.uit_wed = v_rec_finale_wedstrijd.wedstrijd_nummer and
+               wed.soort = v_rec_finale_wedstrijd.soort and wed.jaar = v_n_jaar;
+      
+        update ris_wedstrijden_finale wed
+           set wed.thuis_nr = v_n_verliezer
+         where wed.thuis_wv = 'Verliezer' and
+               wed.thuis_wed = v_rec_finale_wedstrijd.wedstrijd_nummer and
+               wed.soort = v_rec_finale_wedstrijd.soort and wed.jaar = v_n_jaar;
+      
+        update ris_wedstrijden_finale wed
+           set wed.uit_nr = v_n_verliezer
+         where wed.uit_wv = 'Verliezer' and
+               wed.uit_wed = v_rec_finale_wedstrijd.wedstrijd_nummer and
+               wed.soort = v_rec_finale_wedstrijd.soort and wed.jaar = v_n_jaar;
+      
+      end if;
+    end loop;
+  end;
+  ----------------------------------------------------------------------------
+end ris_pck_wfe_trg;

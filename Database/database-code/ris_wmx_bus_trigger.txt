@@ -1,0 +1,7 @@
+create or replace trigger ris_wmx_bus
+  before update on ris_wedstrijden_mix
+
+begin
+  /* Remember to reset the pl/sql table before each statement */
+  ris_pck_wmx_trg.init_table;
+end ris_wmx_bus;

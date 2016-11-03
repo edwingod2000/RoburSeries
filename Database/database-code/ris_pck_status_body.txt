@@ -1,0 +1,211 @@
+create or replace package body ris_pck_status is
+
+  -- Private type declarations
+
+  -- Private constant declarations
+
+  -- Private variable declarations
+
+  -- Function and procedure implementations
+  procedure toon_status(p_jaar in varchar2 default null) is
+  
+    v_n_aantal_gebruikers   number := 0;
+    v_n_aantal_inbox        number := 0;
+    v_n_aantal_outbox       number := 0;
+    v_n_aantal_sentitems    number := 0;
+    v_n_aantal_deleted      number := 0;
+    v_n_aantal_organisation number := 0;
+  
+    cursor v_c_gebruikers is
+      select count(1) as aantal
+        from ris_gebruikers
+       where jaar = to_number(p_jaar);
+  
+    cursor v_c_mail_bericht_inbox is
+      select count(1) as aantal
+        from ris_bericht brt
+       where brt.datum_verwerkt is null and brt.bbkvolgnr = 1 and
+             jaar = to_number(p_jaar);
+  
+    cursor v_c_mail_bericht_outbox is
+      select count(1) as aantal
+        from ris_bericht brt
+       where brt.datum_verwerkt is null and brt.bbkvolgnr = 2 and
+             jaar = to_number(p_jaar);
+  
+    cursor v_c_mail_bericht_sentitems is
+      select count(1) as aantal
+        from ris_bericht brt
+       where brt.datum_verwerkt is null and brt.bbkvolgnr = 3 and
+             jaar = to_number(p_jaar);
+  
+    cursor v_c_mail_bericht_deleted is
+      select count(1) as aantal
+        from ris_bericht brt
+       where brt.datum_verwerkt is null and brt.bbkvolgnr = 4 and
+             jaar = to_number(p_jaar);
+  
+    cursor v_c_sync_status is
+      select sss.type_sync
+            ,sss.datum
+        from ris_syncstatus sss
+       order by sss.type_sync;
+  
+    cursor v_c_mail_organisation is
+      select count(1) as aantal
+        from ris_bericht brt
+       where brt.datum_verwerkt is null and brt.bbkvolgnr = 1 and brt.status = 'O' and
+             jaar = to_number(p_jaar);
+  
+  begin
+    open v_c_gebruikers;
+    fetch v_c_gebruikers
+      into v_n_aantal_gebruikers;
+    close v_c_gebruikers;
+  
+    open v_c_mail_bericht_inbox;
+    fetch v_c_mail_bericht_inbox
+      into v_n_aantal_inbox;
+    close v_c_mail_bericht_inbox;
+  
+    open v_c_mail_bericht_outbox;
+    fetch v_c_mail_bericht_outbox
+      into v_n_aantal_outbox;
+    close v_c_mail_bericht_outbox;
+  
+    open v_c_mail_bericht_sentitems;
+    fetch v_c_mail_bericht_sentitems
+      into v_n_aantal_sentitems;
+    close v_c_mail_bericht_sentitems;
+  
+    open v_c_mail_bericht_deleted;
+    fetch v_c_mail_bericht_deleted
+      into v_n_aantal_deleted;
+    close v_c_mail_bericht_deleted;
+  
+    open v_c_mail_organisation;
+    fetch v_c_mail_organisation
+      into v_n_aantal_organisation;
+    close v_c_mail_organisation;
+  
+    ris_pck_alg.header('true'
+                      ,p_jaar);
+    htp.bodyopen;
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Status Overzicht</font>');
+    htp.p('<BR><BR><BR>');
+    htp.p('<table>');
+    htp.p('<tr>');
+    htp.p('<td valign="TOP">');
+    htp.p('<h2>Status Gebruikers:');
+    htp.p('<table>');
+    htp.p('<tr>');
+    htp.p('<th># Gebruikers</th>');
+    htp.p('<td>' || to_char(v_n_aantal_gebruikers) || '</td>');
+    htp.p('</tr>');
+    htp.p('</table>');
+    htp.p('<h2>Status Mail:');
+    htp.p('<table>');
+    htp.p('<tr>');
+    htp.p('<th># Mail in Inbox</th>');
+    htp.p('<td>' || to_char(v_n_aantal_inbox) || '</td>');
+    htp.p('</tr>');
+    htp.p('<tr>');
+    htp.p('<th># Mail in Outbox</th>');
+    htp.p('<td>' || to_char(v_n_aantal_outbox) || '</td>');
+    htp.p('</tr>');
+    htp.p('<tr>');
+    htp.p('<th># Mail in Sent Items</th>');
+    htp.p('<td>' || to_char(v_n_aantal_sentitems) || '</td>');
+    htp.p('</tr>');
+    htp.p('<tr>');
+    htp.p('<th># Mail in Deleted Items</th>');
+    htp.p('<td>' || to_char(v_n_aantal_deleted) || '</td>');
+    htp.p('</tr>');
+    htp.p('<tr>');
+    htp.p('<th># Unreaded Mail in Organisation Inbox</th>');
+    htp.p('<td>' || to_char(v_n_aantal_organisation) || '</td>');
+    htp.p('</tr>');
+    htp.p('<tr>');
+    htp.p('<th>Tijd mail laatst verzonden</th>');
+    htp.p('<td>' || ris_pck_alg.geef_syspar('SEND_TIME') || '</td>');
+    htp.p('</tr>');
+    htp.p('<tr>');
+    htp.p('<th>Tijd mail laatst ontvangen</th>');
+    htp.p('<td>' || ris_pck_alg.geef_syspar('SYNC_TIME') || '</td>');
+    htp.p('</tr>');
+    htp.p('</table>');
+    htp.p('</h2>');
+  
+    htp.p('</td><td valign="TOP">');
+    htp.p('<h2>');
+    htp.p('Status Synchronisatie:');
+    htp.p('<table>');
+  
+    for v_r_sync_status in v_c_sync_status loop
+      if v_r_sync_status.type_sync = 1 then
+        htp.p('<tr>');
+        htp.p('<th>Teams</th>');
+        htp.p('<td>' || to_char(v_r_sync_status.datum
+                               ,'dd-mm-yyyy hh24:mi:ss') || '</td>');
+        htp.p('</tr>');
+      elsif v_r_sync_status.type_sync = 2 then
+        htp.p('<tr>');
+        htp.p('<th>Deelnemers</th>');
+        htp.p('<td>' || to_char(v_r_sync_status.datum
+                               ,'dd-mm-yyyy hh24:mi:ss') || '</td>');
+        htp.p('</tr>');
+      elsif v_r_sync_status.type_sync = 3 then
+        htp.p('<tr>');
+        htp.p('<th>Soort Deelnemers</th>');
+        htp.p('<td>' || to_char(v_r_sync_status.datum
+                               ,'dd-mm-yyyy hh24:mi:ss') || '</td>');
+        htp.p('</tr>');
+      elsif v_r_sync_status.type_sync = 4 then
+        htp.p('<tr>');
+        htp.p('<th>Hoogtepunten</th>');
+        htp.p('<td>' || to_char(v_r_sync_status.datum
+                               ,'dd-mm-yyyy hh24:mi:ss') || '</td>');
+        htp.p('</tr>');
+      elsif v_r_sync_status.type_sync = 5 then
+        htp.p('<tr>');
+        htp.p('<th>Wedstrijden poule</th>');
+        htp.p('<td>' || to_char(v_r_sync_status.datum
+                               ,'dd-mm-yyyy hh24:mi:ss') || '</td>');
+        htp.p('</tr>');
+      elsif v_r_sync_status.type_sync = 6 then
+        htp.p('<tr>');
+        htp.p('<th>Wedstrijden kruis</th>');
+        htp.p('<td>' || to_char(v_r_sync_status.datum
+                               ,'dd-mm-yyyy hh24:mi:ss') || '</td>');
+        htp.p('</tr>');
+      elsif v_r_sync_status.type_sync = 7 then
+        htp.p('<tr>');
+        htp.p('<th>Wedstrijden finale</th>');
+        htp.p('<td>' || to_char(v_r_sync_status.datum
+                               ,'dd-mm-yyyy hh24:mi:ss') || '</td>');
+        htp.p('</tr>');
+      elsif v_r_sync_status.type_sync = 8 then
+        htp.p('<tr>');
+        htp.p('<th>Wedstrijden mix</th>');
+        htp.p('<td>' || to_char(v_r_sync_status.datum
+                               ,'dd-mm-yyyy hh24:mi:ss') || '</td>');
+        htp.p('</tr>');
+      elsif v_r_sync_status.type_sync = 9 then
+        htp.p('<tr>');
+        htp.p('<th>Wedstrijden demo</th>');
+        htp.p('<td>' || to_char(v_r_sync_status.datum
+                               ,'dd-mm-yyyy hh24:mi:ss') || '</td>');
+        htp.p('</tr>');
+      end if;
+    end loop;
+    htp.p('</table>');
+    htp.p('</h2>');
+    htp.p('</td>');
+    htp.p('</tr>');
+    htp.p('</table>');
+    htp.bodyclose;
+    ris_pck_alg.menu(p_jaar);
+    htp.htmlclose;
+  end;
+end ris_pck_status;

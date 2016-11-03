@@ -1,0 +1,247 @@
+create or replace package body ris_pck_schedule is
+
+  procedure startup is
+  
+  begin
+    htp.htmlopen;
+    htp.bodyopen;
+    htp.header(1
+              ,'Schedule');
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure schedule(p_taal in varchar2 default null
+                    ,p_jaar in varchar2 default null) is
+  
+    cursor v_c_soort is
+      select srt.afkorting
+            ,srt.titel_nl
+            ,srt.titel_en
+        from ris_soort      srt
+            ,ris_soort_jaar sjr
+       where srt.afkorting = sjr.afkorting and sjr.jaar = to_number(p_jaar) and
+             srt.afkorting not in ('DEMOHB', 'DEMOSB')
+       order by srt.display_volgnr;
+  
+  begin
+    ris_pck_alg.header('false');
+    htp.bodyopen;
+--    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+--          'l_s_bbs.jpg" align=absbottom><font size=6>&nbsp;&nbsp;Wedstrijd Schema / Game Schedule ' ||
+--          p_jaar || '</font>');
+    htp.p('<font size=5>Wedstrijd Schema / Game Schedule ' || p_jaar || '</font>');
+    htp.br;
+    htp.br;
+    htp.br;
+    htp.p('<H1>');
+    for v_r_soort in v_c_soort loop
+      htp.p('<a href="/pls/ris/ris_pck_schedule.toon_schema?p_soort=' ||
+            v_r_soort.afkorting || '&p_jaar=' || p_jaar || '">' || v_r_soort.titel_nl ||
+            ' Programma / ' || v_r_soort.titel_en || ' Schedule' || '</a>');
+      htp.br;
+    end loop;
+    htp.p('</H1>');
+    
+    if ris_pck_alg.geef_syspar('WEDSTRIJDSCHEMA_DEFINITIEF') = 'false' then
+      htp.br;
+      htp.p('<i>(De schema' || '''' || 's zijn nog niet definitief / The schedules are still draft)</i>');
+    end if;
+    
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure toon_schema(p_soort in varchar2
+                       ,p_jaar  in varchar2 default null) is
+  
+    v_s_huidige_poule ris_teams.poule%type := 'ANDERS';
+    v_n_regel_nummer  number := 0;
+    v_n_aantal_poules number := 0;
+    v_d_huidige_datum date := to_date('01-01-1900'
+                                     ,'DD-MM-YYYY');
+  
+    cursor v_c_aantal_poules is
+      select count(distinct tem.poule)
+        from ris_teams tem
+       where tem.soort = p_soort and tem.jaar = to_number(p_jaar);
+  
+    cursor v_c_poules is
+      select distinct tem.poule
+        from ris_teams tem
+       where tem.soort = p_soort and tem.jaar = to_number(p_jaar)
+       order by tem.poule;
+  
+    cursor v_c_teams is
+      select tem.naam
+            ,tem.poule
+        from ris_teams tem
+       where tem.soort = p_soort and tem.poule = v_s_huidige_poule and
+             tem.jaar = to_number(p_jaar)
+       order by tem.poule
+               ,tem.naam;
+  
+    cursor v_c_datum is
+      select distinct to_char(wed.datum
+                             ,'Day dd month yyyy'
+                             ,'NLS_DATE_LANGUAGE = DUTCH') as display_datum_nl
+                     ,to_char(wed.datum
+                             ,'Day dd month yyyy'
+                             ,'NLS_DATE_LANGUAGE = AMERICAN') as display_datum_us
+                     ,wed.datum
+        from ris_v_wedstrijden wed
+       where wed.soort in (p_soort, 'DEMO' || p_soort) and wed.jaar = to_number(p_jaar)
+       order by wed.datum;
+  
+    cursor v_c_wedstrijden is
+      select *
+        from ris_v_wedstrijden wed
+       where wed.soort in (p_soort, 'DEMO' || p_soort) and wed.datum = v_d_huidige_datum and
+             wed.jaar = to_number(p_jaar)
+       order by wed.datum
+               ,wed.tijdstip
+               ,wed.wedstrijd_nummer;
+  
+    cursor v_c_soort is
+      select srt.afkorting
+            ,srt.titel_nl
+            ,srt.titel_en
+        from ris_soort      srt
+            ,ris_soort_jaar sjr
+       where srt.afkorting = p_soort and srt.afkorting = sjr.afkorting and
+             sjr.jaar = to_number(p_jaar);
+  
+  begin
+    open v_c_aantal_poules;
+    fetch v_c_aantal_poules
+      into v_n_aantal_poules;
+    close v_c_aantal_poules;
+  
+    htp.htmlopen;
+    htp.headopen;
+  
+    for v_r_soort in v_c_soort loop
+      htp.p('<title>' || v_r_soort.titel_nl || ' Schema / ' || v_r_soort.titel_en ||
+            ' Schedule</title>');
+    end loop;
+  
+    htp.p('<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">');
+    htp.p('<link rel="stylesheet" href="/ris-style/series.css" type="text/css">');
+  
+    ris_pck_alg.norightclick;
+  
+    htp.headclose;
+  
+    htp.bodyopen(cattributes => 'bgcolor="#FFFFFF" text="#000000"');
+--    htp.p('<div class="paginatitel">');
+    htp.p('<table>');
+    for v_r_soort in v_c_soort loop
+      htp.p('<tr><td>');
+      htp.p('<div class="paginatitel">' || v_r_soort.titel_nl || ' Programma / ' || v_r_soort.titel_en || ' Schedule ' || p_jaar || '</div>&nbsp;<a href="javascript:history.back()">[Terug/Back]</a><br/><br/>');
+      htp.p('</td></tr>');
+    end loop;
+    htp.p('</table>');
+--    htp.p('</div>');
+  
+    -- Weergeven Poule-gegevens (Begin)
+    htp.p('<table width="95%" cellspacing=0 class="noborder">');
+    htp.p('<tr>');
+    for v_r_poules in v_c_poules loop
+      if v_s_huidige_poule != v_r_poules.poule then
+        if v_s_huidige_poule != 'ANDERS' then
+          htp.p('</td>');
+          htp.p('<td width="10">&nbsp;</td>');
+        end if;
+        htp.p('<td width="' || to_char(round(100 / v_n_aantal_poules)) ||
+              '%" valign="TOP">');
+        htp.p('<table cellspacing=0 class="tabel" width="100%">');
+        htp.p('<tr>');
+        htp.p('<th>Poule ' || v_r_poules.poule || '</th>');
+        htp.p('</tr>');
+        v_n_regel_nummer := 0;
+      end if;
+      v_s_huidige_poule := v_r_poules.poule;
+    
+      for v_r_teams in v_c_teams loop
+        -- Bepalen welke style toegepast moet worden
+        v_n_regel_nummer := v_n_regel_nummer + 1;
+        htp.p('<tr>');
+        if (v_n_regel_nummer / 2) != round(v_n_regel_nummer / 2) then
+          htp.p('<td>' || v_r_teams.naam || '</td>');
+        else
+          htp.p('<td class="even">' || v_r_teams.naam || '</td>');
+        end if;
+        htp.p('</tr>');
+      end loop;
+      htp.p('</td></tr></table>');
+    end loop;
+    htp.p('</td></tr></table>');
+    -- Weergeven Poule-gegevens (Eind)
+  
+    htp.p('<br>');
+  
+    -- Weergeven Wedstrijd-gegevens (Begin)
+    htp.p('<table width="95%" cellspacing=0 class="tabel">');
+    htp.p('<tr>');
+    htp.p('<td>Nr.<br>&nbsp;</td>');
+    htp.p('<td>Tijd<br>Time</td>');
+    htp.p('<td colspan="3">Wedstrijd<br>Game</td>');
+    htp.p('<td>Uitslag<br>Result</td>');
+    htp.p('<td>Opmerkingen<br>Remarks</td>');
+    htp.p('</tr>');
+  
+    -- Doorloop de diverse datums (Begin)
+    for v_r_datum in v_c_datum loop
+      if trunc(v_d_huidige_datum) != trunc(v_r_datum.datum) then
+        v_n_regel_nummer := 0;
+        htp.p('<tr>');
+        htp.p('<th colspan=7>' || v_r_datum.display_datum_nl || ' / ' ||
+              v_r_datum.display_datum_us || '</th>');
+        htp.p('</tr>');
+      end if;
+    
+      v_d_huidige_datum := trunc(v_r_datum.datum);
+    
+      -- Doorloop de ingeplande wedstrijden op de "huidige datum" (Begin)
+      for v_r_wedstrijden in v_c_wedstrijden loop
+        -- Bepalen welke style toegepast moet worden
+        v_n_regel_nummer := v_n_regel_nummer + 1;
+        if (v_n_regel_nummer / 2) != round(v_n_regel_nummer / 2) then
+          htp.p('<tr valign="TOP">');
+        else
+          htp.p('<tr valign="TOP" class="even">');
+        end if;
+      
+        htp.p('<td>' || v_r_wedstrijden.wedstrijd_nummer || '</td>');
+        htp.p('<td>' || v_r_wedstrijden.tijdstip || '</td>');
+      
+        htp.p('<td>' || v_r_wedstrijden.display_thuis || '</td>');
+        htp.p('<td> - </td>');
+        htp.p('<td>' || v_r_wedstrijden.display_uit || '</td>');
+      
+        if v_r_wedstrijden.punten_voor is null then
+          htp.p('<td>&nbsp;</td>');
+        else
+          htp.p('<td>' || v_r_wedstrijden.punten_voor || ' - ' ||
+                v_r_wedstrijden.punten_tegen || '</td>');
+        end if;
+      
+        htp.p('<td>' || v_r_wedstrijden.opmerking || '</td>');
+        htp.p('</tr>');
+      end loop;
+      -- Doorloop de ingeplande wedstrijden op de "huidige datum" (Eind)
+    end loop;
+    -- Doorloop de diverse datums (Eind)
+  
+    htp.tableclose;
+    -- Weergeven Wedstrijd-gegevens Begin
+    htp.bodyclose;
+    htp.htmlclose;
+  
+  exception
+    when others then
+      htp.p('Fout: ' || to_char(SQLCODE) || ':' || SQLERRM);
+    
+  end;
+
+end ris_pck_schedule;

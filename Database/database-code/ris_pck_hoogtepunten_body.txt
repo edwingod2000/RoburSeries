@@ -1,0 +1,433 @@
+create or replace package body ris_pck_hoogtepunten is
+
+  procedure hoogtepunten_overzicht(p_taal in varchar2 default null
+                                  ,p_jaar in varchar2 default null) is
+  
+    v_n_aantal number := 0;
+  
+    cursor v_c_hoogtepunten is
+      SELECT *
+        FROM ris_hoogtepunten
+       WHERE jaar = to_number(p_jaar)
+       ORDER BY display_volgnr;
+  
+    cursor v_c_aantal is
+      SELECT count(1)
+        FROM ris_hoogtepunten
+       where jaar = to_number(p_jaar);
+  
+  begin
+    ris_pck_alg.header('false'
+                      ,p_jaar);
+  
+    open v_c_aantal;
+    fetch v_c_aantal
+      into v_n_aantal;
+    close v_c_aantal;
+  
+    htp.p('<body>');
+--    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+--          'l_s_bbs.jpg" align=absbottom><font size=6>&nbsp;&nbsp;Hoogtepunten / Highlights ' ||
+--          p_jaar || '</font>');
+    htp.p('<font size=5>Hoogtepunten / Highlights ' || p_jaar || '</font>');
+    htp.p('<BR><BR>');
+  
+    if v_n_aantal = 0 then
+      htp.p('Geen hoogtepunten beschikbaar / No highlight available yet');
+    else
+      htp.p('<table cellspacing=0 cellpadding=0 width=600 class="noborder">');
+      htp.p('<tr><td width="30"><td>');
+      htp.p('<table cellspacing=0 cellpadding=0 width=500 class="noborder">');
+    
+      for v_r_hoogtepunten in v_c_hoogtepunten loop
+        htp.tablerowopen;
+        htp.tabledata('<img src="/ris-img/arrow.gif">&nbsp;&nbsp;'
+                     ,cattributes => 'valign="TOP"');
+        htp.tabledata('<a href="/ris-doc/' || p_jaar || '/highlights/' ||
+                      v_r_hoogtepunten.directory || '/' || v_r_hoogtepunten.htmlpagina || '">' ||
+                      v_r_hoogtepunten.titel || '</a>'
+                     ,cattributes => 'class="infotd" valign="TOP"');
+        htp.tablerowclose;
+        htp.tablerowopen;
+        htp.tabledata('<hr>'
+                     ,ccolspan => '2');
+      end loop;
+      htp.p('</table>');
+      htp.p('</td></tr></table>');
+    end if;
+    htp.br;
+  
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------  
+  procedure wijzig_hoogtepunten(p_jaar in varchar2 default null) is
+  
+    cursor v_c_hoogtepunten is
+      SELECT *
+        FROM ris_hoogtepunten
+       where jaar = to_number(p_jaar)
+       ORDER BY display_volgnr;
+  
+  begin
+    ris_pck_alg.header('true'
+                      ,p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Hoogtepunten ' ||
+          p_jaar || '</font>');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function voegtoe() { ');
+    htp.p('    document.location.href="ris_pck_hoogtepunten.voegtoe_hoogtepunt?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function verwijderHoogtepunt(v_s_volgnr) { ');
+    htp.p('    if (confirm("Hoogtepunt verwijderen?")) { ');
+    htp.p('      document.location.href="ris_pck_hoogtepunten.doe_verwijder_hoogtepunt?p_s_volgnr="+v_s_volgnr+"&p_jaar=' ||
+          p_jaar || '"; ');
+    htp.p('    } ');
+    htp.p('  } ');
+    htp.p('</script>');
+  
+    htp.p('<button onClick="javascript:voegtoe()">Toevoegen</button>');
+    htp.p('<table class="infotable" cellspacing="0" cellpadding="0" width="600">');
+    htp.tablerowopen;
+    htp.tableheader('&nbsp;Wijzig&nbsp;'
+                   ,cattributes => 'class="infoth" align="CENTER" width="30"');
+    htp.tableheader('&nbsp;Verwijder&nbsp;'
+                   ,cattributes => 'class="infoth" align="CENTER" width="30"');
+    htp.tableheader('&nbsp;Omschrijving&nbsp;'
+                   ,cattributes => 'class="infoth" align="CENTER" width="200"');
+    htp.tableheader('&nbsp;Directory&nbsp;'
+                   ,cattributes => 'class="infoth"');
+    htp.tableheader('&nbsp;HTML Pagina&nbsp;'
+                   ,cattributes => 'class="infoth"');
+    htp.tableheader('&nbsp;Volgorde&nbsp;'
+                   ,cattributes => 'class="infoth"');
+    htp.tableheader('&nbsp;Intern&nbsp;'
+                   ,cattributes => 'class="infoth"');
+    htp.tablerowclose;
+    for v_r_hoogtepunten in v_c_hoogtepunten loop
+      htp.tablerowopen;
+      htp.p('<td align=center class="infotd"><a href="ris_pck_hoogtepunten.doe_wijzig_hoogtepunt?p_s_volgnr=' ||
+            to_char(v_r_hoogtepunten.volgnr) || '&p_jaar=' || p_jaar ||
+            '"><img alt="wijzig hoogtepunt" border=0 src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') || 'edit_icon.gif"></a></td>');
+      htp.p('<td align=center class="infotd"><a href="javascript:verwijderHoogtepunt(' ||
+            to_char(v_r_hoogtepunten.volgnr) ||
+            ')"><img border=0 alt="Verwijder hoogtepunt" src="' ||
+            ris_pck_alg.geef_syspar('DIR_IMAGES') || 'delete_icon.gif"></a></td>');
+      htp.tabledata(v_r_hoogtepunten.titel
+                   ,cattributes => 'class="infotd"');
+      htp.tabledata(v_r_hoogtepunten.directory
+                   ,cattributes => 'class="infotd"');
+      htp.tabledata(v_r_hoogtepunten.htmlpagina
+                   ,cattributes => 'class="infotd"');
+      htp.tabledata(v_r_hoogtepunten.display_volgnr
+                   ,cattributes => 'class="infotd"');
+      htp.tabledata(v_r_hoogtepunten.intern
+                   ,cattributes => 'class="infotd"');
+      htp.tablerowclose;
+    end loop;
+    htp.p('</table>');
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------  
+  procedure doe_wijzig_hoogtepunt(p_s_volgnr in varchar2
+                                 ,p_jaar     in varchar2 default null) is
+  
+    cursor v_c_hoogtepunt is
+      select hpt.*
+        from ris_hoogtepunten hpt
+       where hpt.volgnr = to_number(p_s_volgnr) and hpt.jaar = to_number(p_jaar);
+  
+  begin
+    ris_pck_alg.header('true'
+                      ,p_jaar);
+  
+    htp.p('<body>');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Wijzigen hoogtepunt');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function terugMenu() { ');
+    htp.p('    document.location.href="ris_pck_hoogtepunten.wijzig_hoogtepunten?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('  } ');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (controle) {
+                  document.f_hoogtepunt.submit();
+                }
+              } ');
+    htp.p('</script>');
+  
+    htp.formopen('ris_pck_hoogtepunten.bewaar_wijzig_hoogtepunt'
+                ,'POST'
+                ,cattributes => 'name="f_hoogtepunt"');
+    htp.formhidden('p_s_volgnr'
+                  ,p_s_volgnr);
+    htp.formhidden('p_jaar'
+                  ,p_jaar);
+  
+    htp.tableopen(cattributes => 'cellspacing=0');
+    for v_r_hoogtepunt in v_c_hoogtepunt loop
+      htp.tablerowopen;
+      htp.tableheader('Titel&nbsp;'
+                     ,calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_s_titel'
+                                ,50
+                                ,200
+                                ,v_r_hoogtepunt.titel));
+      htp.tablerowclose;
+      htp.tablerowopen;
+      htp.tableheader('Directory&nbsp;'
+                     ,calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_s_directory'
+                                ,50
+                                ,200
+                                ,v_r_hoogtepunt.directory));
+      htp.tablerowclose;
+      htp.tablerowopen;
+      htp.tableheader('HTML Pagina&nbsp;'
+                     ,calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_s_htmlpagina'
+                                ,50
+                                ,200
+                                ,v_r_hoogtepunt.htmlpagina));
+      htp.tablerowclose;
+      htp.tablerowopen;
+      htp.tableheader('Display Volgnr.&nbsp;'
+                     ,calign => 'RIGHT');
+      htp.tabledata(htf.formtext('p_s_display_volgnr'
+                                ,50
+                                ,200
+                                ,v_r_hoogtepunt.display_volgnr));
+      htp.tablerowclose;
+      htp.tablerowopen;
+      htp.tableheader('Intern&nbsp;'
+                     ,calign => 'RIGHT');
+      htp.p('<TD>');                     
+      htp.p('<select name="p_s_intern">');
+      if v_r_hoogtepunt.intern = 'J' then
+        htp.p('<option selected value="J">Ja</option>');
+        htp.p('<option value="N">Nee</option>');
+      else
+        htp.p('<option value="J">Ja</option>');
+        htp.p('<option selected value="N">Nee</option>');
+      end if;
+      htp.p('</select>');
+      htp.p('</TD>');                     
+      htp.tablerowclose;
+    end loop;
+    htp.tableclose;
+    htp.br;
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    htp.formclose;
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure bewaar_wijzig_hoogtepunt(p_s_volgnr         in varchar2
+                                    ,p_s_titel          in varchar2
+                                    ,p_s_directory      in varchar2
+                                    ,p_s_htmlpagina     in varchar2
+                                    ,p_s_display_volgnr in varchar2
+                                    ,p_s_intern         in varchar2
+                                    ,p_jaar             in varchar2) is
+  
+  begin
+    UPDATE ris_hoogtepunten
+       set titel          = p_s_titel
+          ,directory      = p_s_directory
+          ,htmlpagina     = p_s_htmlpagina
+          ,display_volgnr = p_s_display_volgnr
+          ,intern         = p_s_intern
+          ,jaar           = to_number(p_jaar)
+     where volgnr = to_number(p_s_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_hoogtepunten.wijzig_hoogtepunten?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Wijzig Hoogtepunten'
+                                 ,sqlcode
+                                 ,sqlerrm
+                                 ,'Nummer: ' || p_s_volgnr);
+  end;
+  ------------------------------------------------------------------------------------
+  procedure voegtoe_hoogtepunt(p_jaar in varchar2 default null) is
+  
+  begin
+    ris_pck_alg.header('true'
+                      ,p_jaar);
+  
+    htp.bodyopen(cattributes => 'onLoad="javascript:document.f_hoogtepunt.p_s_titel.focus()"');
+    htp.p('<img border=0 src="' || ris_pck_alg.geef_syspar('DIR_IMAGES') ||
+          's_seriesbeheer.gif" align=absbottom><font size=4>&nbsp;&nbsp;Voegtoe Hoogtepunt');
+    htp.p('<BR><BR><BR>');
+  
+    htp.p('<script>');
+    htp.p('  function bewaar() {
+                var controle = true;
+
+                if (controle) {
+                  document.forms[0].submit();
+                }
+              }
+               ');
+    htp.p('</script>');
+  
+    htp.formopen('ris_pck_hoogtepunten.bewaar_voegtoe_hoogtepunt'
+                ,'POST'
+                ,cattributes => 'name="f_hoogtepunt"');
+    htp.formHidden('p_jaar'
+                  ,p_jaar);
+  
+    htp.tableopen(cattributes => 'cellspacing=0');
+  
+    htp.tablerowopen;
+    htp.tableheader('Titel&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_s_titel'
+                              ,50
+                              ,200));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Directory&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_s_directory'
+                              ,50
+                              ,200));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Html Pagina&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_s_htmlpagina'
+                              ,50
+                              ,200));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Display Volgnr.&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.tabledata(htf.formtext('p_s_display_volgnr'
+                              ,50
+                              ,100));
+    htp.tablerowclose;
+  
+    htp.tablerowopen;
+    htp.tableheader('Intern&nbsp;'
+                   ,calign => 'RIGHT');
+    htp.p('<TD>');
+    htp.p('<select name="p_s_intern">');
+    htp.p('<option selected value="J">Ja</option>');
+    htp.p('<option value="N">Nee</option>');
+    htp.p('</select>');
+    htp.p('</TD>');
+    htp.tablerowclose;
+    
+    htp.tableclose;
+    htp.formclose;
+  
+    htp.p('<button onClick="javascript:bewaar()">Bewaar</button>');
+    ris_pck_alg.menu(p_jaar);
+    htp.bodyclose;
+    htp.htmlclose;
+  end;
+  ------------------------------------------------------------------------------------
+  procedure bewaar_voegtoe_hoogtepunt(p_s_titel          in varchar2
+                                     ,p_s_directory      in varchar2
+                                     ,p_s_htmlpagina     in varchar2
+                                     ,p_s_display_volgnr in varchar2
+                                     ,p_s_intern         in varchar2
+                                     ,p_jaar             in varchar2) is
+  
+  begin
+    insert into ris_hoogtepunten
+      (volgnr
+      ,titel
+      ,directory
+      ,htmlpagina
+      ,display_volgnr
+      ,intern
+      ,jaar)
+    values
+      (htn_seq.nextval
+      ,p_s_titel
+      ,p_s_directory
+      ,p_s_htmlpagina
+      ,p_s_display_volgnr
+      ,p_s_intern
+      ,to_number(p_jaar));
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_hoogtepunten.wijzig_hoogtepunten?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Voegtoe Hoogtepunt'
+                                 ,sqlcode
+                                 ,sqlerrm
+                                 ,'Titel: ' || p_s_titel);
+    
+  end;
+  ------------------------------------------------------------------------------------
+  procedure doe_verwijder_hoogtepunt(p_s_volgnr in varchar2
+                                    ,p_jaar     in varchar2 default null) is
+  
+  begin
+    ris_pck_alg.header('false'
+                      ,p_jaar);
+  
+    DELETE FROM ris_hoogtepunten
+     WHERE volgnr = to_number(p_s_volgnr);
+  
+    commit;
+  
+    htp.p('<body>');
+    htp.p('<script>');
+    htp.p('  document.location.href="ris_pck_hoogtepunten.wijzig_hoogtepunten?p_jaar=' ||
+          p_jaar || '";');
+    htp.p('</script>');
+  
+    htp.p('</body>');
+    htp.p('</html>');
+  
+  exception
+    when others then
+      ris_pck_alg.foutafhandeling('Verwijderen Hoogtepunt'
+                                 ,sqlcode
+                                 ,sqlerrm
+                                 ,'Volgnr: ' || p_s_volgnr);
+    
+  end;
+
+end ris_pck_hoogtepunten;
